@@ -1,0 +1,5 @@
+﻿{
+  "city": "auto",
+  "crypto": ["BTC", "ETH", "BNB", "SOL"],
+  "currencies": ["EUR", "JPY", "CNY", "KRW", "GBP", "AUD", "SGD", "THB"]
+}

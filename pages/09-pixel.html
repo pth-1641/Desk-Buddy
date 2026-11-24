@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>Desk-Buddy - Anh 8-bit</title>
+<meta name="menu" content="Anh 8-bit: pixel art dong (hoac video truu tuong ?src=abstract) toan man hinh, cham de doi">
+<link rel="stylesheet" href="common.css">
+<style>
+html,body{background:#000;cursor:pointer;}
+video{position:absolute;left:0;top:0;width:64rem;height:36rem;pointer-events:none;opacity:0;z-index:1;}
+#clk{position:absolute;right:1.4rem;top:1rem;padding:.2rem 1rem;font-size:2.6rem;line-height:3rem;color:#fff;background:rgba(0,0,0,.4);-webkit-border-radius:1rem;border-radius:1rem;z-index:3;}
+#msg{position:absolute;left:0;right:0;top:15rem;text-align:center;font-size:1.3rem;line-height:2rem;color:#9aa5b6;}
+</style>
+</head>
+<body data-nosleep="0">
+<div id="app">
+  <video id="v0"></video><video id="v1"></video>
+  <div id="msg" class="hide">Đang chuẩn bị ảnh 8-bit…<br><small>Lần đầu mất khoảng 1–2 phút (đổi GIF thành video cho máy chạy mượt)</small></div>
+  <div id="clk" class="thin">--:--</div>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  var $ = MS.$, html = MS.html, pad = MS.pad;
+  var ms = /[?&]src=(\w+)/.exec(location.search), SRC = ms ? ms[1] : 'pixel';
+  // two <video>: the next clip loads in the hidden one and is shown only once it really plays (no black screen / spinner)
+  var vs = [$('v0'), $('v1')], cur = -1, pend = -1, list = [], idx = 0, shownAt = 0, nearAt = ['', ''], pendT = 0;
+  var HOLD = 15 * 60000;   // each clip loops for ~15 min, then the next one
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function url(n) { return '/bgvideo?n=' + list[(n + list.length) % list.length]; }
+  function play(v) { try { var p = v.play(); if (p && p['catch']) p['catch'](function () {}); } catch (e) {} }
+  function setSrc(v, u) { if (v.getAttribute('src') !== u) { v.src = u; try { v.load(); } catch (e) {} } }
+  function reveal(i) {
+    var o = vs[1 - i];
+    vs[i].style.opacity = 1; vs[i].style.zIndex = 2; o.style.opacity = 0; o.style.zIndex = 1;
+    try { o.pause(); } catch (e) {}
+    cur = i; pend = -1; shownAt = +new Date(); $('msg').className = 'hide';
+    // buffer the following clip in the hidden element (old Android plays one video at a time: there it loads on switch)
+    if (!MS.lite && list.length > 1) setTimeout(function () { if (pend < 0 && cur === i) setSrc(o, url(idx + 1)); }, 1500);
+  }
+  function start(n) {   // play clip n in the hidden element; the current one stays on screen until the new one is ready
+    if (!list.length) return;
+    idx = (n + list.length) % list.length;
+    var i = cur < 0 ? 0 : 1 - cur;
+    pend = i; pendT = +new Date(); nearAt[i] = '';
+    setSrc(vs[i], url(idx));
+    try { if (vs[i].currentTime > 0.2) vs[i].currentTime = 0; } catch (e) {}
+    play(vs[i]);
+  }
+  function restart(v) { try { v.currentTime = 0.1; } catch (e) {} play(v); }
+  function nearEnd(i) {
+    if (i !== cur) return;
+
+    if (+new Date() - shownAt < HOLD || list.length < 2 || pend >= 0) restart(vs[i]); else start(idx + 1);
+  }
+  for (var k = 0; k < 2; k++) (function (i) {
+    var v = vs[i];
+    v.setAttribute('muted', ''); v.muted = true; v.setAttribute('preload', 'auto');
+    v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
+    v.addEventListener('timeupdate', function () {
+      if (i === pend && v.currentTime > 0.05) reveal(i);
+      if (!v.duration || v.currentTime <= v.duration - 1.5) { nearAt[i] = ''; return; }
+      if (nearAt[i] === v.currentSrc) return;   // only once per pass
+      nearAt[i] = v.currentSrc; nearEnd(i);
+    }, false);
+    v.addEventListener('ended', function () { if (i === cur) nearEnd(i); }, false);
+    v.addEventListener('error', function () { if (i === pend && list.length > 1) setTimeout(function () { start(idx + 1); }, 1000); }, false);
+  })(k);
+  function kick() { if (pend >= 0) play(vs[pend]); else if (cur >= 0 && vs[cur].paused) play(vs[cur]); }   // old browsers need a touch to start
+  document.addEventListener('touchstart', kick, true);
+  document.addEventListener('click', kick, true);
+  setInterval(function () {
+    if (pend >= 0 && +new Date() - pendT > 15000 && list.length > 1) start(idx + 1);   // stuck loading: try another clip
+    else if (pend < 0 && cur >= 0 && vs[cur].paused) restart(vs[cur]);
+  }, 5000);
+  MS.onTap(function () { if (cur >= 0 && pend < 0 && list.length > 1) start(idx + 1); });   // tap -> next clip
+
+  function load() {
+    var x = new XMLHttpRequest();
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      var d = null; try { d = JSON.parse(x.responseText); } catch (e) {}
+      var items = d && d.items ? d.items : [];
+      if (items.length && !list.length) {
+        list = shuffle(items.slice(0)); start(0);
+      } else {
+        if (!list.length && d && d.busy) $('msg').className = '';   // nothing converted yet (first run only)
+        for (var i = 0; i < items.length; i++) if (list.indexOf(items[i]) < 0) list.push(items[i]);   // newly converted clips
+      }
+      setTimeout(load, d && d.busy ? 10000 : 300000);
+    };
+    x.open('GET', '/api/videos?src=' + SRC + '&_=' + (+new Date()), true); x.send(null);
+  }
+
+  function tick() { var n = MS.now(); html('clk', pad(n.h) + ':' + pad(n.m)); }
+  MS.init();
+  tick(); setInterval(tick, 1000);
+  load();
+  MS.poll('/api/ext', 300000, function (d) { MS.setServerTime(d.t, d.tz); tick(); });
+})();
+</script>
+</body>
+</html>

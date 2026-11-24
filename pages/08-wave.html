@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>Desk-Buddy - Song nhac</title>
+<meta name="menu" content="Song nhac cau vong: pho tan so nhay theo am thanh that cua loa PC">
+<link rel="stylesheet" href="common.css">
+<style>
+html,body{background:#000;}
+#wave{position:absolute;left:0;top:6.6rem;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hdr">
+    <div class="title"><span id="live" class="dot"></span>SÓNG NHẠC</div>
+    <div class="hsub" id="hsub">&nbsp;</div>
+    <div class="clock"><div class="date"><div id="dow">&nbsp;</div><div id="dmy">&nbsp;</div></div><div id="time">--:--<span id="sec">--</span></div></div>
+  </div>
+  <!-- bars sit on the very bottom edge of the screen -->
+  <canvas id="wave" data-w="64" data-h="29.4"></canvas>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  var $ = MS.$, html = MS.html, esc = MS.esc;
+  var NB = 48, ALPHA = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_', RATE = 30;   // server samples/s
+  // typed arrays where available: plain JS arrays of doubles make the old V8 allocate a heap number on every write
+  // (thousands per second) -> long garbage-collection pauses = the bars freeze for a moment
+  function arr(n) { if (window.Float32Array) return new Float32Array(n); var a = []; for (var q = 0; q < n; q++) a[q] = 0; return a; }
+  var cur = arr(NB), caps = arr(NB), capV = arr(NB), i;
+  var IDX = {}; for (i = 0; i < 64; i++) IDX[ALPHA.charAt(i)] = i / 63;
+  function decode(s) { var a = arr(NB); for (var k = 0; k < NB; k++) a[k] = IDX[s.charAt(k)] || 0; return a; }
+
+  // Look: an LED equalizer mirrored left/right around the middle of the screen: bass in the centre, treble towards
+  // both edges. 24 columns per side (each = louder of 2 neighbouring bands). One colour at a time, slowly drifting
+  // round the colour wheel (~90 s per turn; ?hue=N fixes it). Unlit cells stay faintly visible like a real LED panel,
+  // the top 20% is a brighter "hot" zone (hue shifted a little), each column's top lit cell glows, peak caps are
+  // near-white dots that fall.
+  // Canvas at 1 backing pixel per CSS pixel (the old browser draws canvas in software). Bars are whole LED cells, so
+  // each frame only repaints the cells that changed (usually 0-3 per column); the whole canvas is repainted only
+  // when the colour steps (about once a second).
+  var NS = NB / 2, mh = /[?&]hue=(\d+)/.exec(location.search), FIXED = !!mh, HUE = mh ? +mh[1] % 360 : 190;
+  var ON, HOT, TIP, OFF, CAPC, HOTL = 0, hueStep = -1, t0 = +new Date();
+  function colours() {
+    ON = 'hsl(' + HUE + ',100%,55%)'; TIP = 'hsl(' + HUE + ',100%,82%)';
+    HOT = 'hsl(' + ((HUE + 28) % 360) + ',100%,66%)';
+    CAPC = 'hsl(' + HUE + ',60%,95%)';
+  }
+  OFF = 'hsl(215,30%,11%)';   // unlit cells: fixed, so a colour step only repaints the lit cells
+  function col(lv) { return lv >= HOTL ? HOT : ON; }
+  var cv = $('wave'), c = null, W = 0, H = 0, L = 0, PITCH = 6, CH = 4, XL = [], XR = [], CW = 0, pn = [], pp = [], full = true;
+  function setup() {
+    W = Math.round(parseFloat(cv.style.width)); H = Math.round(parseFloat(cv.style.height));
+    cv.width = W; cv.height = H; c = cv.getContext('2d');
+    L = Math.floor((H - 4) / PITCH); HOTL = Math.floor(L * 0.8);
+    var bw = (W - 24) / (NS * 2), gap = Math.max(3, Math.round(bw * 0.28));
+    CW = Math.round(bw) - gap;
+    for (var s = 0; s < NS; s++) {   // s = band (0 = bass): right of the centre and its mirror on the left
+      XR[s] = Math.round(W / 2 + gap / 2 + s * bw);
+      XL[s] = W - XR[s] - CW;
+    }
+    full = true;
+  }
+  function yC(lv) { return H - 2 - (lv + 1) * PITCH + (PITCH - CH); }   // top of LED cell lv (0 = bottom)
+  function cell(s, lv) { var y = yC(lv); c.fillRect(XL[s], y, CW, CH); c.fillRect(XR[s], y, CW, CH); }
+  function draw() {
+    if (!c) return;
+    var s, n, p, lv, o;
+    if (!FIXED) {   // colour drift: 1 step/s, 4 deg per step = 90 s per turn; repaint only the lit cells
+      var st4 = Math.floor((+new Date() - t0) / 1000);
+      if (st4 !== hueStep) {
+        hueStep = st4; HUE = (190 + st4 * 4) % 360; colours();
+        if (!full) for (s = 0; s < NS; s++) {
+          for (lv = 0; lv < pn[s] - 1; lv++) { c.fillStyle = col(lv); cell(s, lv); }
+          if (pn[s] > 0) { c.fillStyle = TIP; cell(s, pn[s] - 1); }
+          if (pp[s] >= 0) { c.fillStyle = CAPC; cell(s, pp[s]); }
+        }
+      }
+    }
+    if (full) {
+      colours();
+      c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+      c.fillStyle = OFF; for (s = 0; s < NS; s++) for (lv = 0; lv < L; lv++) cell(s, lv);
+      for (s = 0; s < NS; s++) { pn[s] = 0; pp[s] = -1; }
+      full = false;
+    }
+    for (s = 0; s < NS; s++) {
+      var v = Math.max(cur[2 * s], cur[2 * s + 1]), vc = Math.max(caps[2 * s], caps[2 * s + 1]);
+      n = Math.max(1, Math.min(L, Math.round(v * L)));    // lit cells
+      p = Math.min(L - 1, Math.round(vc * L));             // cap cell, shown only above the bar
+      if (p < n) p = -1;
+      o = pn[s];
+      c.fillStyle = OFF;                                   // switch off: cells the bar left, the old cap
+      for (lv = n; lv < o; lv++) cell(s, lv);
+      if (pp[s] >= n && pp[s] !== p) cell(s, pp[s]);
+      if (n > o) {   // new cells (also covers an old cap in range); the old tip becomes a normal cell
+        for (lv = Math.max(0, o - 1); lv < n - 1; lv++) { c.fillStyle = col(lv); cell(s, lv); }
+      }
+      if (n !== o) { c.fillStyle = TIP; cell(s, n - 1); }
+      if (p >= 0 && p !== pp[s]) { c.fillStyle = CAPC; cell(s, p); }
+      pn[s] = n; pp[s] = p;
+    }
+  }
+
+  // data: poll ~6x/s. Playback is time based with interpolation between samples, so motion stays smooth whatever the
+  // phone's frame rate is; we stay ~8 samples behind the newest one to absorb network jitter.
+  // one failed request (Wi-Fi blip, single-threaded server busy) must not flash "disconnected": only after 6 s of errors
+  var buf = [], seq = 0, playPos = 0, lastT = +new Date(), lastOk = +new Date(), isDown = false, subText = '';
+  function poll() {
+    var done = false, x = new XMLHttpRequest(), t0 = +new Date();
+    var to = setTimeout(function () { if (!done) x.abort(); }, 3000);
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4 || done) return;
+      done = true; clearTimeout(to);
+      st.net = +new Date() - t0; if (st.net > st.netMax) st.netMax = st.net;
+      var d = null;
+      if (x.status === 200) { try { d = JSON.parse(x.responseText); } catch (e) {} }
+      if (d) {
+        lastOk = +new Date();
+        if (isDown) { isDown = false; MS.live(true); if (subText) html('hsub', subText); }
+        if (d.seq < seq) seq = 0;
+        if (seq && d.s) for (var j = 0; j < d.s.length; j++) if (d.s[j][2]) buf.push(decode(d.s[j][2]));
+        seq = d.seq;
+      } else if (!isDown && +new Date() - lastOk > 6000) { isDown = true; MS.live(false); }
+      setTimeout(poll, d ? 180 : 1000);
+    };
+    x.open('GET', '/api/meter?since=' + seq + '&_=' + (+new Date()), true); x.send(null);
+  }
+  // Android 4.1's browser has no requestAnimationFrame: a 16 ms timer kept its only WebKit thread drawing non-stop, so
+  // painting the screen / timers / network got starved and the picture stuck now and then. Aim for ~30 fps and always
+  // leave the thread some idle time.
+  var FRAME_MS = 33, nraf = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+  function next() { if (nraf) nraf(frame); else setTimeout(frame, Math.max(8, FRAME_MS - (+new Date() - lastT))); }
+
+  // ?debug=1: on-screen timings, to tell a JS stall (long gap between frames) from a network one
+  var DBG = /[?&]debug=1/.test(location.search), dbg = null, st = { n: 0, gap: 0, stalls: 0, lastStall: '', net: 0, netMax: 0 };
+  if (DBG) {
+    dbg = document.createElement('div');
+    dbg.style.cssText = 'position:absolute;left:1.2rem;top:5.6rem;z-index:9;font-size:1.1rem;line-height:1.4rem;color:#ff0;background:rgba(0,0,0,.6);padding:.2rem .6rem;';
+    $('app').appendChild(dbg);
+    setInterval(function () {
+      dbg.innerHTML = st.n + ' fps &nbsp; gap max ' + st.gap + ' ms &nbsp; stalls&gt;200ms: ' + st.stalls + (st.lastStall ? ' (last ' + st.lastStall + ')' : '') +
+        ' &nbsp; net ' + st.net + '/' + st.netMax + ' ms &nbsp; buf ' + Math.round(buf.length - playPos);
+      st.n = 0; st.gap = 0; st.netMax = 0;
+    }, 1000);
+  }
+
+  function frame() {
+    var now = +new Date(), gapMs = now - lastT, dt = Math.min(0.1, gapMs / 1000); lastT = now;
+    if (DBG) {
+      st.n++; if (gapMs > st.gap) st.gap = gapMs;
+      if (gapMs > 200) { st.stalls++; var dd = new Date(); st.lastStall = dd.getMinutes() + ':' + dd.getSeconds() + ' ' + gapMs + 'ms'; }
+    }
+    // jitter buffer: keep the play head ~8 samples (~0.27 s) behind the newest, so a late reply (Wi-Fi, busy server)
+    // doesn't run us dry and freeze the bars; drift back to the target with a gentle speed change, not steps
+    var lag = buf.length - playPos, speed = Math.max(0.6, Math.min(1.6, 1 + (lag - 8) * 0.06));
+    if (lag > 45) { playPos = buf.length - 8; }
+    playPos = Math.min(playPos + dt * RATE * speed, Math.max(0, buf.length - 1));
+    var i0 = Math.floor(playPos), f = playPos - i0, a = buf[i0], b = buf[Math.min(i0 + 1, buf.length - 1)];
+    // drop consumed samples
+    if (i0 > 30) { buf.splice(0, i0 - 2); playPos -= i0 - 2; }
+    for (var k = 0; k < NB; k++) {
+      var target = a ? a[k] + (b[k] - a[k]) * f : cur[k] * 0.9;
+      cur[k] += (target - cur[k]) * Math.min(1, dt * 30);
+      if (cur[k] >= caps[k]) { caps[k] = cur[k]; capV[k] = 0; }
+      else { capV[k] += dt * 1.8; caps[k] = Math.max(cur[k], caps[k] - capV[k] * dt); }   // caps fall with gravity
+    }
+    draw();
+    next();
+  }
+
+  function track() {
+    var x = new XMLHttpRequest();
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      try {
+        var d = JSON.parse(x.responseText);
+        subText = d.has && d.title ? 'Đang phát: ' + esc(d.title) + (d.artist ? ' &nbsp;·&nbsp; ' + esc(d.artist) : '') : 'Âm thanh đang phát ra loa máy tính';
+        if (!isDown) html('hsub', subText);
+      } catch (e) {}
+      setTimeout(track, 5000);
+    };
+    x.open('GET', '/api/media?_=' + (+new Date()), true); x.send(null);
+  }
+
+  MS.onLayout(setup);
+  MS.init();
+  poll(); track(); next();
+  MS.poll('/api/ext', 300000, function (d) { MS.setServerTime(d.t, d.tz); });
+})();
+</script>
+</body>
+</html>

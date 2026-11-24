@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#05070a">
+<title>Desk-Buddy - Lich</title>
+<meta name="menu" content="Dong ho lon + lich am, lich thang, dem nguoc Tet va ngay le">
+<link rel="stylesheet" href="common.css">
+<style>
+#bdow{position:absolute;left:2.2rem;top:2.2rem;font-size:1.5rem;font-weight:700;letter-spacing:.3rem;color:#38bdf8;}
+#bt{position:absolute;left:1.6rem;top:4.2rem;font-size:12.5rem;line-height:12.5rem;letter-spacing:-.5rem;white-space:nowrap;}
+#bs{font-size:3rem;color:#4b5567;letter-spacing:0;margin-left:.6rem;font-weight:300;}
+#bdate{position:absolute;left:2.2rem;top:17.6rem;font-size:2.2rem;font-weight:500;white-space:nowrap;}
+.lun{position:absolute;left:2.2rem;right:2.2rem;top:21.6rem;border-top:1px solid #1a212c;padding-top:1.3rem;}
+#lday{font-size:2.3rem;font-weight:600;color:#fbbf24;margin-top:.4rem;white-space:nowrap;}
+#lcc{font-size:1.15rem;color:#7b8799;margin-top:.6rem;white-space:nowrap;}
+.secbar{position:absolute;left:2.2rem;right:2.2rem;bottom:2rem;height:.3rem;background:#141b26;-webkit-border-radius:.2rem;border-radius:.2rem;overflow:hidden;}
+#secf{height:100%;width:0;background:#38bdf8;-webkit-border-radius:.2rem;border-radius:.2rem;}
+#wchip{position:absolute;right:2rem;top:1.7rem;text-align:right;white-space:nowrap;}
+#wchip canvas{display:inline-block;vertical-align:middle;}
+#wt{display:inline-block;vertical-align:middle;font-size:2.2rem;font-weight:300;margin-left:.3rem;}
+#wc{font-size:1rem;color:#7b8799;margin-top:-.2rem;}
+.wd{position:absolute;top:3.2rem;width:3.6rem;text-align:center;font-size:.9rem;font-weight:700;color:#5f6b7e;letter-spacing:.05rem;}
+.cell{position:absolute;width:3.4rem;height:2.65rem;text-align:center;-webkit-border-radius:.6rem;border-radius:.6rem;}
+.cell .sd{font-size:1.3rem;font-weight:600;line-height:1.6rem;padding-top:.25rem;}
+.cell .ld{font-size:.78rem;color:#5f6b7e;line-height:.9rem;}
+.cell .ld.first{color:#fbbf24;font-weight:700;}
+.cell.out{opacity:.28;}
+.cell.sun .sd{color:#f87171;}
+.cell.today{background:#38bdf8;}
+.cell.today .sd,.cell.today .ld{color:#05070a!important;}
+.cell.love .sd span,.cell.love .ld{position:relative;}
+.cell.love .sd{color:#fff;font-size:1.1rem;}
+.cell.love .ld{visibility:hidden;}
+.cell .hrt{position:absolute;left:0;right:0;top:-.36rem;font-size:3.3rem;line-height:3.1rem;-webkit-transform:scale(.94,.84);transform:scale(.94,.84);text-align:center;font-style:normal;font-weight:400;color:#db2777;}
+.cell.today .hrt{color:#be185d;}
+.ev{position:absolute;left:1.3rem;right:1.3rem;height:2.1rem;}
+.ev .en{font-size:1.15rem;font-weight:600;line-height:1.3rem;white-space:nowrap;overflow:hidden;margin-right:6rem;}
+.ev .ed{font-size:.88rem;color:#5f6b7e;line-height:1rem;}
+.ev .ec{position:absolute;right:0;top:0;font-size:1.8rem;font-weight:700;line-height:2.1rem;color:#38bdf8;}
+.ev .ec small{font-size:.95rem;color:#7b8799;font-weight:500;margin-left:.25rem;}
+.ev.tet .ec{color:#f87171;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="card" style="left:1.2rem;top:1.2rem;width:34rem;height:33.6rem;">
+    <div id="bdow">&nbsp;</div>
+    <div id="wchip" class="hide"><canvas id="wi" data-w="3.4" data-h="3.4"></canvas><span id="wt"></span><div id="wc"></div></div>
+    <div id="bt" class="thin">--:--</div>
+    <div id="bdate">&nbsp;</div>
+    <div class="lun"><div class="k">ÂM LỊCH</div><div id="lday">&nbsp;</div><div id="lcc">&nbsp;</div></div>
+    <div class="secbar"><div id="secf"></div></div>
+  </div>
+
+  <div class="card" style="left:36rem;top:1.2rem;width:26.8rem;height:22rem;">
+    <div class="ch"><span id="live" class="dot"></span><span class="lbl" id="mtitle">THÁNG</span><span class="chr" id="mlunar"></span></div>
+    <div id="grid"></div>
+  </div>
+
+  <div class="card" style="left:36rem;top:24rem;width:26.8rem;height:10.8rem;">
+    <div class="ch"><span class="dot" style="background:#f87171"></span><span class="lbl">SẮP TỚI</span></div>
+    <div id="events"></div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  var $ = MS.$, html = MS.html, pad = MS.pad;
+  var DOWL = ['CHỦ NHẬT', 'THỨ HAI', 'THỨ BA', 'THỨ TƯ', 'THỨ NĂM', 'THỨ SÁU', 'THỨ BẢY'];
+  var SOLAR = [[1, 1, 'Tết Dương lịch'], [14, 2, 'Lễ Tình nhân'], [8, 3, 'Quốc tế Phụ nữ'], [30, 4, 'Giải phóng miền Nam'],
+    [1, 5, 'Quốc tế Lao động'], [1, 6, 'Quốc tế Thiếu nhi'], [2, 9, 'Quốc khánh'], [20, 10, 'Phụ nữ Việt Nam'],
+    [20, 11, 'Nhà giáo Việt Nam'], [24, 12, 'Giáng sinh']];
+  var LUNAR = [[15, 1, 'Rằm tháng Giêng'], [10, 3, 'Giỗ Tổ Hùng Vương'], [5, 5, 'Tết Đoan Ngọ'], [15, 7, 'Lễ Vu Lan'],
+    [15, 8, 'Tết Trung thu'], [23, 12, 'Ông Công Ông Táo']];
+
+  // grid skeleton
+  var s = '', i, L = 0.8, CW = 3.6;
+  for (i = 0; i < 7; i++) s += '<div class="wd" style="left:' + (L + i * CW).toFixed(2) + 'rem">' + ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][i] + '</div>';
+  for (i = 0; i < 42; i++) {
+    s += '<div class="cell" id="c' + i + '" style="left:' + (L + 0.1 + (i % 7) * CW).toFixed(2) + 'rem;top:' + (4.7 + Math.floor(i / 7) * 2.8).toFixed(2) + 'rem">' +
+      '<div class="sd" id="cs' + i + '"></div><div class="ld" id="cl' + i + '"></div></div>';
+  }
+  $('grid').innerHTML = s;
+  s = '';
+  for (i = 0; i < 3; i++) s += '<div class="ev' + (i === 0 ? ' tet' : '') + '" style="top:' + (3.0 + i * 2.6).toFixed(2) + 'rem"><div class="en" id="en' + i + '"></div><div class="ed" id="ed' + i + '"></div><div class="ec" id="ec' + i + '"></div></div>';
+  $('events').innerHTML = s;
+
+  function dmy(a) { return pad(a[0]) + '/' + pad(a[1]) + '/' + a[2]; }
+
+  var lastDay = '';
+  function renderDay(n) {
+    var key = n.Y + '-' + n.M + '-' + n.D;
+    if (key === lastDay) return;
+    lastDay = key;
+    var lu = MS.solar2lunar(n.D, n.M, n.Y);
+    html('bdow', DOWL[n.w]);
+    html('bdate', n.D + ' tháng ' + n.M + ', ' + n.Y);
+    html('lday', MS.lunarDayName(lu.d) + ' tháng ' + MS.lunarMonthName(lu.m) + (lu.leap ? ' (nhuận)' : ''));
+    html('lcc', 'Năm ' + MS.ccYear(lu.y) + ' &nbsp;·&nbsp; Tháng ' + MS.ccMonth(lu.m, lu.y) + ' &nbsp;·&nbsp; Ngày ' + MS.ccDay(lu.jd));
+
+    // month grid (weeks start Monday)
+    html('mtitle', 'THÁNG ' + n.M + ' · ' + n.Y);
+    html('mlunar', 'Năm ' + MS.ccYear(lu.y));
+    var first = new Date(Date.UTC(n.Y, n.M - 1, 1)).getUTCDay(), lead = (first + 6) % 7;
+    var jd1 = MS.jd(1, n.M, n.Y), todayJd = lu.jd;
+    for (var i = 0; i < 42; i++) {
+      var jd = jd1 - lead + i;
+      var g = jdToGreg(jd), l = MS.solar2lunar(g[0], g[1], g[2]);
+      var cls = 'cell' + (g[1] !== n.M ? ' out' : '') + (i % 7 === 6 ? ' sun' : '') + (jd === todayJd ? ' today' : '') + (g[0] === 22 ? ' love' : '');
+      $('c' + i).className = cls;
+      html('cs' + i, g[0] === 22 ? '<i class="hrt">&#9829;</i><span>22</span>' : String(g[0]));   // anniversary: 22nd of every month
+      $('cl' + i).className = 'ld' + (l.d === 1 ? ' first' : '');
+      html('cl' + i, l.d === 1 ? '1/' + l.m : String(l.d));
+    }
+    $('c35').style.display = (lead + daysIn(n.M, n.Y) > 35) ? '' : 'none';
+    for (i = 36; i < 42; i++) $('c' + i).style.display = $('c35').style.display;
+
+    // events
+    var evs = [], y, k, a;
+    for (k = 0; k < SOLAR.length; k++) for (y = n.Y; y <= n.Y + 1; y++) {
+      var j = MS.jd(SOLAR[k][0], SOLAR[k][1], y);
+      if (j >= todayJd) { evs.push({ n: SOLAR[k][2], jd: j, d: [SOLAR[k][0], SOLAR[k][1], y] }); break; }
+    }
+    for (k = 0; k < LUNAR.length; k++) for (y = lu.y; y <= lu.y + 1; y++) {
+      a = MS.lunar2solar(LUNAR[k][0], LUNAR[k][1], y, 0);
+      if (a && MS.jd(a[0], a[1], a[2]) >= todayJd) { evs.push({ n: LUNAR[k][2], jd: MS.jd(a[0], a[1], a[2]), d: a, l: LUNAR[k] }); break; }
+    }
+    evs.sort(function (p, q) { return p.jd - q.jd; });
+    var tetY = lu.y + 1;
+    if (lu.m === 1 && lu.d === 1) tetY = lu.y;
+    var tet = MS.lunar2solar(1, 1, tetY, 0), tetJd = MS.jd(tet[0], tet[1], tet[2]);
+    var rows = [{ n: 'Tết Nguyên Đán ' + MS.ccYear(tetY), jd: tetJd, d: tet, l: [1, 1] }].concat(evs.slice(0, 2));
+    for (i = 0; i < 3; i++) {
+      var e = rows[i], left = e.jd - todayJd;
+      html('en' + i, MS.esc(e.n));
+      html('ed' + i, dmy(e.d) + (e.l ? ' · ' + e.l[0] + '/' + e.l[1] + ' âm lịch' : ''));
+      html('ec' + i, left === 0 ? 'Hôm nay' : left + '<small>ngày</small>');
+    }
+  }
+  function daysIn(m, y) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+  function jdToGreg(jd) { var d = new Date((jd - 2440588) * 86400000); return [d.getUTCDate(), d.getUTCMonth() + 1, d.getUTCFullYear()]; }
+
+  function tick() {
+    var n = MS.now();
+    html('bt', pad(n.h) + ':' + pad(n.m) + '<span id="bs">' + pad(n.s) + '</span>');
+    $('secf').style.width = ((n.s + n.ms / 1000) / 60 * 100).toFixed(2) + '%';
+    renderDay(n);
+  }
+
+  var W = null;
+  function drawWeather() {
+    if (!W) return;
+    var o = MS.ctx2d('wi');
+    MS.drawWx(o.c, o.w / 2, o.h / 2, o.w, W.current.weather_code, W.current.is_day);
+  }
+  function onExt(d) {
+    MS.live(true);
+    MS.setServerTime(d.t, d.tz);
+    W = d.weather;
+    if (W && W.current) {
+      $('wchip').className = '';
+      html('wt', Math.round(W.current.temperature_2m) + '°');
+      html('wc', MS.wx(W.current.weather_code)[0] + ' · ' + MS.esc(d.city || ''));
+      drawWeather();
+    }
+  }
+
+  MS.onLayout(drawWeather);
+  MS.init();
+  tick(); setInterval(tick, MS.lite ? 1000 : 250);
+  MS.poll('/api/ext', 60000, onExt, function () { MS.live(false); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# server tu ghi
+last-page.txt
+
+# rac
+*.log
+*.err
+Thumbs.db

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#05070a">
+<title>Desk-Buddy - Dang phat</title>
+<meta name="menu" content="Dang phat: bai nhac tren PC, phat/dung, chuyen bai, am luong">
+<link rel="stylesheet" href="common.css">
+<style>
+#artbox{position:absolute;left:1.2rem;top:6.4rem;width:28.4rem;height:28.4rem;-webkit-border-radius:1.4rem;border-radius:1.4rem;background:#111722;background:-webkit-linear-gradient(-45deg,#1e1b4b,#0f172a 60%,#082f49);background:linear-gradient(135deg,#1e1b4b,#0f172a 60%,#082f49);border:1px solid #171e29;}
+#art{position:absolute;left:0;top:0;width:28.4rem;height:28.4rem;-webkit-border-radius:1.4rem;border-radius:1.4rem;display:none;}
+#noart{position:absolute;left:9.2rem;top:9.2rem;}
+.side{position:absolute;left:31.4rem;width:31.4rem;}
+#app-name{top:6.9rem;font-size:1.05rem;font-weight:700;letter-spacing:.14rem;color:#9aa5b6;white-space:nowrap;}
+#app-name .st{margin-left:.8rem;font-weight:600;letter-spacing:.05rem;}
+#title{top:9.2rem;font-size:2.7rem;font-weight:700;line-height:3.2rem;height:6.4rem;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;}
+#artist{top:16.1rem;font-size:1.6rem;color:#aeb8c6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#prog{top:19.6rem;}
+.times{font-size:1.15rem!important;}
+.bar{height:.5rem;background:#1a212c;-webkit-border-radius:.3rem;border-radius:.3rem;overflow:hidden;}
+#pfill{height:100%;width:0;background:#38bdf8;-webkit-border-radius:.3rem;border-radius:.3rem;}
+.times{margin-top:.5rem;font-size:1rem;color:#5f6b7e;}
+.times span{float:right;}
+.btn{position:absolute;-webkit-border-radius:50%;border-radius:50%;background:#111722;border:1px solid #1f2835;cursor:pointer;}
+.btn canvas{position:absolute;left:50%;top:50%;}
+.btn.big{background:#38bdf8;border-color:#38bdf8;}
+.btn.hit{background:#1f2835;}
+.btn.big.hit{background:#7dd3fc;}
+#vol{top:31rem;height:3.8rem;}
+.vbtn{position:absolute;top:0;width:3.8rem;height:3.8rem;-webkit-border-radius:1rem;border-radius:1rem;background:#111722;border:1px solid #1f2835;cursor:pointer;}
+.vbtn canvas{position:absolute;left:.75rem;top:.75rem;}
+.vbtn.hit{background:#1f2835;}
+.vbtn.on{border-color:#f87171;}
+#vbar{position:absolute;left:9.4rem;top:2.2rem;width:16.6rem;height:.5rem;background:#1a212c;-webkit-border-radius:.3rem;border-radius:.3rem;overflow:hidden;}
+#vfill{height:100%;width:0;background:#a78bfa;}
+#vtxt{position:absolute;left:9.4rem;top:.25rem;width:16.6rem;font-size:.95rem;color:#7b8799;text-align:right;}
+#vtxt b{color:#cdd5df;font-weight:600;}
+#vhit{position:absolute;left:8.9rem;top:0;width:17.6rem;height:3.8rem;cursor:pointer;}
+.sd{display:inline-block;width:.6rem;height:.6rem;-webkit-border-radius:50%;border-radius:50%;margin-right:.45rem;position:relative;top:-.1rem;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hdr">
+    <div class="title"><span id="live" class="dot"></span>ĐANG PHÁT</div>
+    <div class="hsub hide" id="hsub">&nbsp;</div>
+    <div class="clock"><div class="date"><div id="dow">&nbsp;</div><div id="dmy">&nbsp;</div></div><div id="time">--:--<span id="sec">--</span></div></div>
+  </div>
+
+  <div id="artbox"><canvas id="noart" data-w="10" data-h="10"></canvas><img id="art" alt=""></div>
+
+  <div class="side" id="app-name">&nbsp;</div>
+  <div class="side" id="title">Không có gì đang phát</div>
+  <div class="side" id="artist">&nbsp;</div>
+  <div class="side hide" id="prog"><div class="bar"><div id="pfill"></div></div><div class="times"><span id="tdur"></span><b id="tpos"></b></div></div>
+
+  <div class="btn" id="b-prev" style="left:36.2rem;top:23.6rem;width:5.6rem;height:5.6rem;"><canvas id="i-prev" data-w="2.4" data-h="2.4" style="margin:-1.2rem 0 0 -1.2rem"></canvas></div>
+  <div class="btn big" id="b-play" style="left:43.6rem;top:22.8rem;width:7.2rem;height:7.2rem;"><canvas id="i-play" data-w="3" data-h="3" style="margin:-1.5rem 0 0 -1.5rem"></canvas></div>
+  <div class="btn" id="b-next" style="left:52.6rem;top:23.6rem;width:5.6rem;height:5.6rem;"><canvas id="i-next" data-w="2.4" data-h="2.4" style="margin:-1.2rem 0 0 -1.2rem"></canvas></div>
+
+  <div class="side" id="vol">
+    <div class="vbtn" id="b-mute" style="left:0"><canvas id="i-mute" data-w="2.3" data-h="2.3"></canvas></div>
+    <div class="vbtn" id="b-vdn" style="left:4.4rem"><canvas id="i-vdn" data-w="2.3" data-h="2.3"></canvas></div>
+    <div id="vtxt"><b id="vpct">–</b></div>
+    <div id="vbar"><div id="vfill"></div></div>
+    <div id="vhit"></div>
+    <div class="vbtn" id="b-vup" style="left:26.9rem"><canvas id="i-vup" data-w="2.3" data-h="2.3"></canvas></div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  var $ = MS.$, html = MS.html, esc = MS.esc, pad = MS.pad;
+  var M = null, artId = -1, playing = false;
+
+  function fmtT(s) { s = Math.max(0, Math.round(s || 0)); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + pad(m) : m) + ':' + pad(x); }
+
+  function drawIcons() {
+    var o;
+    o = MS.ctx2d('i-prev'); MS.icon(o.c, 'prev', o.w / 2, o.h / 2, o.w, '#e6ebf2');
+    o = MS.ctx2d('i-next'); MS.icon(o.c, 'next', o.w / 2, o.h / 2, o.w, '#e6ebf2');
+    o = MS.ctx2d('i-play'); MS.icon(o.c, playing ? 'pause' : 'play', o.w / 2 + (playing ? 0 : o.w * 0.05), o.h / 2, o.w, '#05070a');
+    o = MS.ctx2d('i-mute'); MS.icon(o.c, 'mute', o.w / 2, o.h / 2, o.w, M && M.muted ? '#f87171' : '#aeb8c6');
+    o = MS.ctx2d('i-vdn'); MS.icon(o.c, 'voldown', o.w / 2, o.h / 2, o.w, '#aeb8c6');
+    o = MS.ctx2d('i-vup'); MS.icon(o.c, 'volup', o.w / 2, o.h / 2, o.w, '#aeb8c6');
+    o = MS.ctx2d('noart'); MS.icon(o.c, 'note', o.w / 2, o.h / 2, o.w, 'rgba(255,255,255,0.18)');
+  }
+
+  function render(d) {
+    MS.live(true);
+    $('hsub').className = 'hsub hide';
+    M = d;
+    // position "now" using only server clocks: pos was measured at server time `at`, the response was built at server
+    // time `t`. From here on we only add elapsed time measured on the phone - the phone's (often wrong) wall clock never
+    // matters. (Using phone time vs server time made the bar jump to the end and back when opening the page.)
+    M.base = (d.pos || 0) + (d.status === 'playing' && d.at && d.t ? Math.max(0, d.t - d.at) / 1000 : 0);
+    M.rx = +new Date();
+    var st = d.status;
+    playing = st === 'playing';
+    if (d.has) {
+      html('app-name', esc((d.app || '').toUpperCase()) + (st === 'playing' ? '<span class="st pos"><span class="sd" style="background:#34d399"></span>Đang phát</span>' : st === 'paused' ? '<span class="st muted"><span class="sd" style="background:#7b8799"></span>Tạm dừng</span>' : ''));
+      html('title', esc(d.title || (st === 'paused' ? 'Đã tạm dừng' : '')));
+      html('artist', esc(d.artist || '') + (d.album ? ' <span class="muted">· ' + esc(d.album) + '</span>' : '') || '&nbsp;');
+    } else {
+      html('app-name', '&nbsp;');
+      html('title', 'Không có gì đang phát');
+      html('artist', '<span class="muted">Mở Spotify, YouTube… trên máy tính</span>');
+    }
+    // artwork
+    if (d.art !== artId) {
+      artId = d.art;
+      if (d.art) { $('art').src = '/api/media/art?v=' + d.art; $('art').style.display = 'block'; $('noart').style.display = 'none'; }
+      else { $('art').style.display = 'none'; $('noart').style.display = 'block'; }
+    }
+    // volume
+    if (d.vol >= 0) {
+      html('vpct', d.muted ? 'Đã tắt tiếng' : d.vol + '%');
+      $('vfill').style.width = (d.muted ? 0 : d.vol) + '%';
+      $('b-mute').className = 'vbtn' + (d.muted ? ' on' : '');
+    }
+    progress();
+    drawIcons();
+  }
+
+  function progress() {
+    if (!M || !M.dur) { $('prog').className = 'side hide'; return; }
+    $('prog').className = 'side';
+    var pos = M.base;
+    if (M.status === 'playing') pos += Math.max(0, +new Date() - M.rx) / 1000;
+    pos = Math.min(pos, M.dur);
+    $('pfill').style.width = (pos / M.dur * 100).toFixed(2) + '%';
+    html('tpos', fmtT(pos)); html('tdur', fmtT(M.dur));
+  }
+  setInterval(progress, 1000);
+
+  function cmd(c, el) {
+    if (el) { el.className += ' hit'; setTimeout(function () { el.className = el.className.replace(/ hit/g, ''); }, 180); }
+    if (c === 'play') { playing = !playing; drawIcons(); }
+    MS.post('/api/media/cmd?c=' + c, function () { setTimeout(refresh, 450); });
+  }
+  MS.tap($('b-play'), function () { cmd('play', $('b-play')); });
+  MS.tap($('b-prev'), function () { cmd('prev', $('b-prev')); });
+  MS.tap($('b-next'), function () { cmd('next', $('b-next')); });
+  MS.tap($('b-mute'), function () { cmd('mute', $('b-mute')); });
+  MS.tap($('b-vdn'), function () { cmd('voldown', $('b-vdn')); });
+  MS.tap($('b-vup'), function () { cmd('volup', $('b-vup')); });
+  // tap on the volume bar -> set level
+  MS.tap($('vhit'), function (e) {
+    var t = e.touches && e.touches[0] ? e.touches[0] : e, r = $('vbar').getBoundingClientRect();
+    var pct = Math.round(Math.max(0, Math.min(1, (t.clientX - r.left) / r.width)) * 100);
+    cmd('vol' + pct);
+  });
+
+  function refresh() {
+    var x = new XMLHttpRequest();
+    x.onreadystatechange = function () { if (x.readyState === 4 && x.status === 200) { try { render(JSON.parse(x.responseText)); } catch (e) {} } };
+    x.open('GET', '/api/media?_=' + (+new Date()), true); x.send(null);
+  }
+
+  MS.onLayout(drawIcons);
+  MS.init();
+  MS.poll('/api/ext', 300000, function (d) { MS.setServerTime(d.t, d.tz); });
+  MS.poll('/api/media', 1500, render, function () { MS.live(false); });
+})();
+</script>
+</body>
+</html>

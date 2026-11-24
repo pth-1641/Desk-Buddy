@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#05070a">
+<title>Desk-Buddy - Thoi tiet</title>
+<meta name="menu" content="Thoi tiet: hien tai, 24 gio toi, 7 ngay, chat luong khong khi">
+<link rel="stylesheet" href="common.css">
+<style>
+#ic-now{position:absolute;left:1rem;top:1.4rem;}
+#t-now{position:absolute;left:10.6rem;top:1.2rem;font-size:7.8rem;line-height:8.4rem;letter-spacing:-.3rem;white-space:nowrap;}
+#t-now small{font-size:3rem;vertical-align:top;position:relative;top:1.2rem;letter-spacing:0;color:#7b8799;}
+#c-now{position:absolute;left:1.6rem;top:11rem;font-size:2rem;font-weight:600;white-space:nowrap;}
+#f-now{position:absolute;left:1.6rem;top:13.7rem;font-size:1.15rem;color:#7b8799;white-space:nowrap;}
+#f-now b{color:#e6ebf2;font-weight:600;}
+.tile{position:absolute;width:6.93rem;height:5.4rem;background:#111722;-webkit-border-radius:.8rem;border-radius:.8rem;padding:.85rem 0 0 .9rem;}
+.tile .v{font-size:1.55rem;margin-top:.35rem;}
+.tile .v small{font-size:.9rem;}
+.dcol{position:absolute;top:2.9rem;width:4.9rem;height:9.6rem;text-align:center;-webkit-border-radius:.8rem;border-radius:.8rem;}
+.dcol.today{background:#111722;}
+.dcol .dn{font-size:1rem;font-weight:700;color:#9aa5b6;margin-top:.6rem;letter-spacing:.05rem;}
+.dcol canvas{margin:.2rem auto 0;}
+.dcol .hi{font-size:1.4rem;font-weight:600;line-height:1.6rem;}
+.dcol .lo{font-size:1.05rem;color:#7b8799;}
+.dcol .rp{font-size:.9rem;color:#38bdf8;font-weight:600;margin-top:.15rem;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hdr">
+    <div class="title"><span id="live" class="dot"></span>THỜI TIẾT<em id="city"></em></div>
+    <div class="hsub" id="hsub">Đang tải…</div>
+    <div class="clock"><div class="date"><div id="dow">&nbsp;</div><div id="dmy">&nbsp;</div></div><div id="time">--:--<span id="sec">--</span></div></div>
+  </div>
+
+  <div class="card" style="left:1.2rem;top:6.4rem;width:24rem;height:28.4rem;">
+    <canvas id="ic-now" data-w="9" data-h="9"></canvas>
+    <div id="t-now" class="thin">--<small>°</small></div>
+    <div id="c-now">–</div>
+    <div id="f-now">&nbsp;</div>
+    <div class="tile" style="left:1rem;top:16.4rem"><div class="k">ĐỘ ẨM</div><div class="v" id="hum">–</div></div>
+    <div class="tile" style="left:8.53rem;top:16.4rem"><div class="k">GIÓ</div><div class="v" id="wind">–</div></div>
+    <div class="tile" style="left:16.06rem;top:16.4rem"><div class="k">CHỈ SỐ UV</div><div class="v" id="uv">–</div></div>
+    <div class="tile" style="left:1rem;top:22.4rem"><div class="k">KHÔNG KHÍ</div><div class="v" id="aqi">–</div></div>
+    <div class="tile" style="left:8.53rem;top:22.4rem"><div class="k">BÌNH MINH</div><div class="v" id="rise">–</div></div>
+    <div class="tile" style="left:16.06rem;top:22.4rem"><div class="k">HOÀNG HÔN</div><div class="v" id="set">–</div></div>
+  </div>
+
+  <div class="card" style="left:26rem;top:6.4rem;width:36.8rem;height:14.4rem;">
+    <div class="ch"><span class="dot" style="background:#fbbf24"></span><span class="lbl">24 GIỜ TỚI</span><span class="chr" id="h-sum"></span></div>
+    <canvas id="hourly" data-w="36.8" data-h="11.2" style="position:absolute;left:0;top:3rem"></canvas>
+  </div>
+
+  <div class="card" style="left:26rem;top:21.6rem;width:36.8rem;height:13.2rem;">
+    <div class="ch"><span class="dot" style="background:#38bdf8"></span><span class="lbl">7 NGÀY</span><span class="chr" id="d-sum"></span></div>
+    <div id="days"></div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  var $ = MS.$, html = MS.html, W = null, A = null;
+  var UVL = [[2, 'Thấp', '#34d399'], [5, 'TB', '#facc15'], [7, 'Cao', '#fb923c'], [10, 'Rất cao', '#f87171'], [99, 'Cực cao', '#c084fc']];
+  function uvInfo(v) { for (var i = 0; i < UVL.length; i++) if (v <= UVL[i][0]) return UVL[i]; return UVL[4]; }
+
+  // build day columns
+  var s = '';
+  for (var i = 0; i < 7; i++) {
+    s += '<div class="dcol" id="dc' + i + '" style="left:' + (0.9 + i * 5.0).toFixed(2) + 'rem">' +
+      '<div class="dn" id="dn' + i + '">–</div><canvas id="di' + i + '" data-w="3.6" data-h="3.6"></canvas>' +
+      '<div class="hi" id="dh' + i + '">–</div><div class="lo" id="dl' + i + '">–</div><div class="rp" id="dr' + i + '">&nbsp;</div></div>';
+  }
+  $('days').innerHTML = s;
+
+  function drawIcons() {
+    if (!W) return;
+    var o = MS.ctx2d('ic-now');
+    MS.drawWx(o.c, o.w / 2, o.h / 2, o.w, W.current.weather_code, W.current.is_day);
+    for (var i = 0; i < 7; i++) {
+      if (W.daily.weather_code[i] == null) continue;
+      var d = MS.ctx2d('di' + i);
+      MS.drawWx(d.c, d.w / 2, d.h / 2, d.w * 0.95, W.daily.weather_code[i], 1, i === 0 ? '#111722' : null);
+    }
+    drawHourly();
+  }
+
+  function drawHourly() {
+    var o = MS.ctx2d('hourly'), c = o.c, w = o.w, h = o.h, u = MS.unit() / 10;
+    var H = W.hourly, n = Math.min(25, H.time.length), i;
+    if (n < 2) return;
+    var px = 18 * u, step = (w - px * 2) / (n - 1);
+    var tTop = 40 * u, tBot = 66 * u, rTop = 74 * u, rBot = 94 * u;
+    var mn = Infinity, mx = -Infinity;
+    for (i = 0; i < n; i++) { mn = Math.min(mn, H.temperature_2m[i]); mx = Math.max(mx, H.temperature_2m[i]); }
+    if (mx - mn < 4) { var mid = (mx + mn) / 2; mn = mid - 2; mx = mid + 2; }
+    function X(i) { return px + i * step; }
+    function Y(t) { return tBot - (t - mn) / (mx - mn) * (tBot - tTop); }
+
+    // rain probability bars
+    for (i = 0; i < n; i++) {
+      var p = H.precipitation_probability[i] || 0;
+      c.fillStyle = 'rgba(56,189,248,.10)';
+      c.fillRect(X(i) - step * 0.32, rTop, step * 0.64, rBot - rTop);
+      if (p > 0) {
+        c.fillStyle = p >= 50 ? 'rgba(56,189,248,.85)' : 'rgba(56,189,248,.5)';
+        var bh = (rBot - rTop) * p / 100;
+        c.fillRect(X(i) - step * 0.32, rBot - bh, step * 0.64, bh);
+      }
+    }
+    // temperature area + line
+    c.beginPath();
+    for (i = 0; i < n; i++) { if (i) c.lineTo(X(i), Y(H.temperature_2m[i])); else c.moveTo(X(i), Y(H.temperature_2m[i])); }
+    c.lineTo(X(n - 1), tBot + 4 * u); c.lineTo(X(0), tBot + 4 * u); c.closePath();
+    var g = c.createLinearGradient(0, tTop, 0, tBot + 4 * u);
+    g.addColorStop(0, 'rgba(251,191,36,.28)'); g.addColorStop(1, 'rgba(251,191,36,0)');
+    c.fillStyle = g; c.fill();
+    c.beginPath();
+    for (i = 0; i < n; i++) { if (i) c.lineTo(X(i), Y(H.temperature_2m[i])); else c.moveTo(X(i), Y(H.temperature_2m[i])); }
+    c.strokeStyle = '#fbbf24'; c.lineWidth = 2 * u; c.lineJoin = 'round'; c.stroke();
+
+    c.textAlign = 'center';
+    for (i = 0; i < n; i += 3) {
+      var x = X(i), y = Y(H.temperature_2m[i]);
+      MS.circ(c, x, y, 2.6 * u, '#fbbf24');
+      MS.circ(c, x, y, 1.2 * u, '#0c1016');
+      c.fillStyle = '#e6ebf2'; c.font = MS.font(11 * u, 600);
+      c.fillText(Math.round(H.temperature_2m[i]) + '°', x, y - 7 * u);
+      MS.drawWx(c, x, 13 * u, 22 * u, H.weather_code[i], H.is_day[i]);
+      c.fillStyle = i === 0 ? '#fbbf24' : '#7b8799'; c.font = MS.font(9.5 * u, i === 0 ? 700 : 500);
+      c.fillText(i === 0 ? 'Bây giờ' : H.time[i].substr(11, 2) + 'h', x, 107 * u);
+      var pp = H.precipitation_probability[i] || 0;
+      if (pp >= 20) { c.fillStyle = '#7dd3fc'; c.font = MS.font(8.5 * u, 600); c.fillText(pp + '%', x, rTop - 1.5 * u); }
+    }
+  }
+
+  function render(d) {
+    MS.live(true);
+    W = d.weather; A = d.aqi;
+    html('city', MS.esc(d.city || ''));
+    if (!W || !W.current) { html('hsub', 'Chưa lấy được dữ liệu thời tiết – máy chủ cần có Internet'); return; }
+    MS.setServerTime(d.t, W.utc_offset_seconds / 60);
+    var cur = W.current, dl = W.daily, info = MS.wx(cur.weather_code);
+    var up = new Date((d.upd.weather || d.t) + W.utc_offset_seconds * 1000);
+    html('hsub', 'Cập nhật ' + MS.pad(up.getUTCHours()) + ':' + MS.pad(up.getUTCMinutes()) + ' &nbsp;·&nbsp; Open-Meteo' +
+      (d.locSrc === 'ip' ? ' &nbsp;·&nbsp; vị trí đoán theo IP' : d.locSrc === 'fallback' ? ' &nbsp;·&nbsp; chưa xác định được vị trí' : ''));
+
+    html('t-now', Math.round(cur.temperature_2m) + '<small>°C</small>');
+    html('c-now', info[0]);
+    html('f-now', 'Cảm giác <b>' + Math.round(cur.apparent_temperature) + '°</b> &nbsp;·&nbsp; Cao <b>' +
+      Math.round(dl.temperature_2m_max[0]) + '°</b> &nbsp;Thấp <b>' + Math.round(dl.temperature_2m_min[0]) + '°</b>');
+    html('hum', cur.relative_humidity_2m + '<small>%</small>');
+    html('wind', Math.round(cur.wind_speed_10m) + '<small>km/h ' + MS.windDir(cur.wind_direction_10m, true) + '</small>');
+    var uv = dl.uv_index_max[0] || 0, ui = uvInfo(uv);
+    html('uv', '<span style="color:' + ui[2] + '">' + Math.round(uv) + '</span><small>' + ui[1] + '</small>');
+    if (A && A.current && A.current.us_aqi != null) {
+      var ai = MS.aqiInfo(A.current.us_aqi);
+      html('aqi', '<span style="color:' + ai[2] + '">' + A.current.us_aqi + '</span><small>' + ai[1] + '</small>');
+    } else html('aqi', '–');
+    html('rise', MS.hhmm(dl.sunrise[0]));
+    html('set', MS.hhmm(dl.sunset[0]));
+
+    // hourly summary
+    var H = W.hourly, maxP = 0, i;
+    for (i = 0; i < Math.min(25, H.time.length); i++) maxP = Math.max(maxP, H.precipitation_probability[i] || 0);
+    html('h-sum', maxP >= 20 ? 'Khả năng mưa cao nhất ' + maxP + '%' : 'Không có mưa');
+
+    // daily
+    var hiAll = -99, loAll = 99;
+    for (i = 0; i < 7; i++) {
+      if (dl.time[i] == null) { $('dc' + i).className = 'dcol hide'; continue; }
+      var p = dl.time[i].split('-'), wd = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay();
+      $('dc' + i).className = 'dcol' + (i === 0 ? ' today' : '');
+      html('dn' + i, i === 0 ? 'HÔM NAY' : MS.DOWS[wd] + ' ' + (+p[2]));
+      html('dh' + i, Math.round(dl.temperature_2m_max[i]) + '°');
+      html('dl' + i, Math.round(dl.temperature_2m_min[i]) + '°');
+      var rp = dl.precipitation_probability_max[i];
+      html('dr' + i, rp >= 10 ? 'Mưa ' + rp + '%' : '&nbsp;');
+      hiAll = Math.max(hiAll, dl.temperature_2m_max[i]); loAll = Math.min(loAll, dl.temperature_2m_min[i]);
+    }
+    html('d-sum', 'Từ ' + Math.round(loAll) + '° đến ' + Math.round(hiAll) + '°');
+    drawIcons();
+  }
+
+  MS.onLayout(drawIcons);
+  MS.init();
+  MS.poll('/api/ext', 30000, render, function () { MS.live(false); });
+})();
+</script>
+</body>
+</html>

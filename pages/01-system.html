@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#05070a">
+<title>Desk-Buddy - He thong</title>
+<meta name="menu" content="He thong: CPU, RAM, GPU, mang, o dia, top tien trinh">
+<style>
+/* ---------- layout only; all colours/fonts come from the theme <style id="theme"> ---------- */
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;}
+body{-webkit-text-size-adjust:none;text-size-adjust:none;-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:rgba(0,0,0,0);cursor:pointer;}
+*{-webkit-box-sizing:border-box;box-sizing:border-box;}
+.hide{display:none!important;}
+
+#app{position:absolute;left:0;top:0;width:64rem;height:36rem;-webkit-transform-origin:0 0;transform-origin:0 0;}
+#app.off .card{opacity:.4;}
+
+#hdr{position:absolute;left:1.3rem;top:1rem;width:61.4rem;height:4.6rem;}
+.host{position:absolute;left:0;top:.35rem;font-size:1.7rem;font-weight:700;letter-spacing:.12rem;white-space:nowrap;}
+.hsub{position:absolute;left:0;top:2.85rem;font-size:1.1rem;white-space:nowrap;max-width:37rem;overflow:hidden;text-overflow:ellipsis;}
+.dot{display:inline-block;width:.8rem;height:.8rem;-webkit-border-radius:50%;border-radius:50%;margin-right:.7rem;vertical-align:middle;position:relative;top:-.15rem;}
+#live.on{-webkit-animation:pulse 2s ease-in-out infinite;animation:pulse 2s ease-in-out infinite;}
+@-webkit-keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.bat{display:inline-block;margin-left:1.2rem;font-size:1.05rem;font-weight:600;letter-spacing:0;vertical-align:middle;position:relative;top:-.15rem;}
+.batbox{display:inline-block;position:relative;width:2.2rem;height:1.1rem;border-width:.15rem;border-style:solid;-webkit-border-radius:.25rem;border-radius:.25rem;margin-right:.5rem;vertical-align:middle;top:-.1rem;}
+.batbox:after{content:"";position:absolute;right:-.4rem;top:.2rem;width:.2rem;height:.4rem;}
+#batfill{position:absolute;left:.1rem;top:.1rem;bottom:.1rem;-webkit-border-radius:.1rem;border-radius:.1rem;}
+
+.clock{position:absolute;right:0;top:-.25rem;}
+.date{float:left;text-align:right;margin:.9rem 1.4rem 0 0;}
+#dow{font-size:1.15rem;font-weight:700;letter-spacing:.16rem;}
+#dmy{font-size:1.15rem;margin-top:.35rem;letter-spacing:.06rem;}
+#time{float:left;font-size:4.7rem;font-weight:200;line-height:4.7rem;letter-spacing:-.1rem;}
+#sec{font-size:1.6rem;margin-left:.45rem;font-weight:400;letter-spacing:0;}
+
+.card{position:absolute;overflow:hidden;-webkit-transition:opacity .4s;transition:opacity .4s;}
+.ch{position:absolute;left:1.3rem;right:1.3rem;top:1.1rem;height:1.6rem;line-height:1.6rem;font-size:1.05rem;white-space:nowrap;}
+.ch .dot{width:.7rem;height:.7rem;margin-right:.6rem;top:-.1rem;}
+.lbl{font-weight:700;letter-spacing:.18rem;}
+.chr{position:absolute;right:0;top:0;font-weight:500;max-width:11rem;overflow:hidden;text-overflow:ellipsis;}
+
+canvas{display:block;}
+canvas.gauge{position:absolute;left:.9rem;top:3.1rem;width:10rem;height:10rem;}
+.gv{position:absolute;left:.9rem;top:3.1rem;width:10rem;text-align:center;padding-top:3.35rem;}
+.gnum{font-size:3.1rem;font-weight:600;line-height:3.2rem;letter-spacing:-.05rem;white-space:nowrap;}
+.gu{font-size:1.4rem;margin-left:.15rem;font-weight:500;letter-spacing:0;}
+.gs{font-size:1.05rem;margin-top:.15rem;font-weight:600;}
+.kv{position:absolute;left:11.9rem;top:3.6rem;width:7.2rem;}
+.row{height:2.85rem;}
+.k{font-size:.9rem;letter-spacing:.08rem;line-height:1.1rem;white-space:nowrap;}
+.v{font-size:1.4rem;font-weight:600;line-height:1.7rem;white-space:nowrap;}
+.v small,.nv small{font-size:.95rem;font-weight:500;margin-left:.2rem;}
+.cores{position:relative;height:2.7rem;margin-top:.4rem;}
+.core{position:absolute;bottom:0;height:100%;overflow:hidden;}
+.core i{position:absolute;left:0;right:0;bottom:0;display:block;-webkit-transition:height .5s;transition:height .5s;}
+canvas.spark{position:absolute;left:0;bottom:0;}
+
+.nb{position:absolute;top:3.4rem;}
+.nv{font-size:2.7rem;font-weight:600;line-height:3.1rem;letter-spacing:-.05rem;white-space:nowrap;}
+.tri{display:inline-block;width:0;height:0;border-left:.42rem solid transparent;border-right:.42rem solid transparent;margin-right:.45rem;position:relative;top:-.1rem;}
+
+.drv{position:absolute;left:1.3rem;right:1.3rem;}
+.dl{font-size:1.1rem;height:1.5rem;line-height:1.5rem;font-weight:700;}
+.dl em{font-style:normal;}
+.dl em small{font-weight:500;}
+.dl span{float:right;font-size:1rem;font-weight:500;}
+.bar{height:.5rem;overflow:hidden;margin-top:.3rem;}
+.bar i{display:block;height:100%;-webkit-transition:width .6s;transition:width .6s;}
+.io{position:absolute;left:1.3rem;right:1.3rem;bottom:1rem;font-size:1rem;white-space:nowrap;}
+.io b{font-weight:600;}
+.io .r{float:right;}
+
+.plist{position:absolute;left:.8rem;right:.8rem;top:3.1rem;}
+.pr{position:relative;height:1.44rem;line-height:1.44rem;font-size:1.05rem;margin-bottom:.05rem;}
+.pb{position:absolute;left:0;top:.15rem;bottom:.15rem;width:0;-webkit-transition:width .6s;transition:width .6s;}
+.pn{position:relative;display:block;margin:0 4.8rem 0 .5rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.pc{position:absolute;right:.5rem;top:0;font-weight:600;}
+
+#toast{position:absolute;left:50%;top:15.5rem;width:24rem;margin-left:-12rem;text-align:center;padding:1.1rem 0;font-size:1.5rem;font-weight:700;letter-spacing:.1rem;opacity:0;-webkit-transition:opacity .35s;transition:opacity .35s;pointer-events:none;z-index:9;}
+#toast small{display:block;font-size:.95rem;font-weight:500;margin-top:.3rem;letter-spacing:.05rem;}
+#toast.show{opacity:1;}
+/* lite mode (old Android, set by common.js): no continuous repaints */
+.lite #live.on{-webkit-animation:none!important;animation:none!important;-webkit-box-shadow:none!important;box-shadow:none!important;}
+.lite .card{overflow:visible!important;}
+</style>
+<style id="theme"></style>
+</head>
+<body>
+<div id="app">
+
+  <div id="hdr">
+    <div class="host"><span id="live" class="dot"></span><span id="host">DESK-BUDDY</span><span id="bat" class="bat hide"><span class="batbox"><span id="batfill"></span></span><span id="batt"></span></span></div>
+    <div class="hsub" id="hsub">Đang kết nối…</div>
+    <div class="clock">
+      <div class="date"><div id="dow">&nbsp;</div><div id="dmy">&nbsp;</div></div>
+      <div id="time">--:--<span id="sec">--</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="left:1.2rem;top:6.4rem;width:20rem;height:17rem;">
+    <div class="ch"><span class="dot d-cpu"></span><span class="lbl" data-l="CPU">CPU</span><span class="chr" id="cpu-name"></span></div>
+    <canvas class="gauge" id="g-cpu" data-w="10" data-h="10"></canvas>
+    <div class="gv"><div class="gnum"><span id="cpu-v">0</span><span class="gu">%</span></div><div class="gs" id="cpu-temp">&nbsp;</div></div>
+    <div class="kv">
+      <div class="row"><div class="k">XUNG NHỊP</div><div class="v" id="cpu-ghz">–</div></div>
+      <div class="row"><div class="k">TIẾN TRÌNH</div><div class="v" id="cpu-procs">–</div></div>
+      <div class="k">LÕI</div><div class="cores" id="cores"></div>
+    </div>
+    <canvas class="spark" id="s-cpu" data-w="20" data-h="3.4"></canvas>
+  </div>
+
+  <div class="card" style="left:22rem;top:6.4rem;width:20rem;height:17rem;">
+    <div class="ch"><span class="dot d-ram"></span><span class="lbl" data-l="RAM">RAM</span><span class="chr" id="ram-total"></span></div>
+    <canvas class="gauge" id="g-ram" data-w="10" data-h="10"></canvas>
+    <div class="gv"><div class="gnum"><span id="ram-v">0</span><span class="gu">%</span></div><div class="gs">ĐÃ DÙNG</div></div>
+    <div class="kv">
+      <div class="row"><div class="k">ĐANG DÙNG</div><div class="v" id="ram-used">–</div></div>
+      <div class="row"><div class="k">CÒN TRỐNG</div><div class="v" id="ram-free">–</div></div>
+      <div class="row"><div class="k">COMMIT</div><div class="v" id="ram-commit">–</div></div>
+    </div>
+    <canvas class="spark" id="s-ram" data-w="20" data-h="3.4"></canvas>
+  </div>
+
+  <div class="card" style="left:42.8rem;top:6.4rem;width:20rem;height:17rem;">
+    <div class="ch"><span class="dot d-gpu"></span><span class="lbl" data-l="GPU">GPU</span><span class="chr" id="gpu-name"></span></div>
+    <canvas class="gauge" id="g-gpu" data-w="10" data-h="10"></canvas>
+    <div class="gv"><div class="gnum"><span id="gpu-v">0</span><span class="gu">%</span></div><div class="gs">3D</div></div>
+    <div class="kv">
+      <div class="row"><div class="k">VIDEO</div><div class="v" id="gpu-dec">–</div></div>
+      <div class="row"><div class="k">COPY</div><div class="v" id="gpu-copy">–</div></div>
+      <div class="row"><div class="k">BỘ NHỚ</div><div class="v" id="gpu-mem">–</div></div>
+    </div>
+    <canvas class="spark" id="s-gpu" data-w="20" data-h="3.4"></canvas>
+  </div>
+
+  <div class="card" style="left:1.2rem;top:24.2rem;width:24.4rem;height:10.6rem;">
+    <div class="ch"><span class="dot d-down"></span><span class="lbl" data-l="MẠNG">MẠNG</span><span class="chr" id="net-if" style="max-width:15rem"></span></div>
+    <div class="nb" style="left:1.3rem"><div class="k"><span class="tri dn"></span>TẢI XUỐNG</div><div class="nv" id="net-down">–</div></div>
+    <div class="nb" style="left:12.8rem"><div class="k"><span class="tri up"></span>TẢI LÊN</div><div class="nv" id="net-up">–</div></div>
+    <canvas class="spark" id="s-net" data-w="24.4" data-h="3.2"></canvas>
+  </div>
+
+  <div class="card" style="left:26.4rem;top:24.2rem;width:16.8rem;height:10.6rem;">
+    <div class="ch"><span class="dot d-disk"></span><span class="lbl" data-l="Ổ ĐĨA">Ổ ĐĨA</span><span class="chr" id="disk-busy"></span></div>
+    <div class="drv" id="drv0" style="top:3.3rem"><div class="dl"><em id="drv0-n"></em><span id="drv0-t"></span></div><div class="bar"><i id="drv0-b"></i></div></div>
+    <div class="drv" id="drv1" style="top:5.75rem"><div class="dl"><em id="drv1-n"></em><span id="drv1-t"></span></div><div class="bar"><i id="drv1-b"></i></div></div>
+    <div class="io"><span>ĐỌC <b id="disk-r">–</b></span><span class="r">GHI <b id="disk-w">–</b></span></div>
+  </div>
+
+  <div class="card" style="left:44rem;top:24.2rem;width:18.8rem;height:10.6rem;">
+    <div class="ch"><span class="dot d-proc"></span><span class="lbl" data-l="TOP CPU">TOP CPU</span><span class="chr">% CPU</span></div>
+    <div class="plist" id="plist"></div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  'use strict';
+  var DW = 640, DH = 360, N = 60, POLL = 2000;
+  var LITE = !!(window.MS && MS.lite);
+  var dpr = window.devicePixelRatio || 1;
+  var app = document.getElementById('app');
+  var unit = 10, shiftX = 0, shiftY = 0;
+  var allowRotate = !/[?&]rotate=0/.test(location.search);
+
+  function $(id) { return document.getElementById(id); }
+  var cache = {};
+  function html(id, v) { if (cache[id] === v) return; cache[id] = v; $(id).innerHTML = v; }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function hexA(hex, a) {
+    var n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+
+  // =================================================================== THEMES
+  var SANS = 'Roboto,"Segoe UI","Helvetica Neue",Arial,sans-serif';
+  var THIN = '"sans-serif-light","Roboto Light","Segoe UI Light","Helvetica Neue",Roboto,sans-serif';
+  var MONO = '"Droid Sans Mono","Cascadia Mono",Consolas,"Courier New",monospace';
+  var COND = '"sans-serif-condensed","Roboto Condensed","Arial Narrow","Segoe UI",Roboto,sans-serif';
+
+  // style: 'soft' (rounded gradient cards) | 'line' (outline only) | 'flat' (solid tiles)
+  //        'neon' (glow + clipped corners) | 'term' (terminal brackets) | 'glass' (frosted) | 'paper'
+  var THEMES = [
+    { id: 'midnight', name: 'Midnight', desc: 'Tối, bo tròn, mặc định', style: 'soft',
+      bg: '#05070a', card: '#0f141c', card2: '#090c11', border: '#171e29', text: '#e6ebf2', text2: '#cdd5df',
+      muted: '#9aa5b6', sub: '#7b8799', dim: '#5f6b7e', track: '#161d28', tick: '#1f2835', barbg: '#141b26',
+      accent: '#38bdf8', live: '#22c55e', knob: '#ffffff',
+      cpu: ['#0369a1', '#38bdf8'], ram: ['#6d28d9', '#a78bfa'], gpu: ['#047857', '#34d399'],
+      down: '#22d3ee', up: '#f472b6', disk: '#fbbf24', proc: '#fb923c', hot: ['#dc2626', '#f87171'] },
+
+    { id: 'amoled', name: 'Pure Black', desc: 'Đen tuyệt đối, chỉ viền mảnh – tiết kiệm pin AMOLED', style: 'line',
+      bg: '#000000', card: '#000000', card2: '#000000', border: '#1c1c1c', text: '#f5f5f5', text2: '#d4d4d4',
+      muted: '#8a8a8a', sub: '#777777', dim: '#555555', track: '#151515', tick: '#000000', barbg: '#151515',
+      accent: '#f472b6', live: '#4ade80', knob: '#ffffff', font: SANS, clock: THIN, thinGauge: true,
+      cpu: ['#2563eb', '#60a5fa'], ram: ['#db2777', '#f472b6'], gpu: ['#16a34a', '#4ade80'],
+      down: '#60a5fa', up: '#f472b6', disk: '#facc15', proc: '#fb923c', hot: ['#dc2626', '#f87171'] },
+
+    { id: 'cyber', name: 'Neon City', desc: 'Neon tím-vàng, phát sáng, góc vát', style: 'neon',
+      bg: '#07000f', card: '#160a28', card2: '#0b0416', border: '#4c1d7a', text: '#fbf5ff', text2: '#ead7ff',
+      muted: '#d08bff', sub: '#a77bd6', dim: '#7d58a8', track: '#22103a', tick: '#000000', barbg: '#22103a',
+      accent: '#fcee0a', live: '#00ffd5', knob: '#ffffff', glow: true, font: COND, clock: COND, upper: true,
+      cpu: ['#0090ff', '#00f0ff'], ram: ['#ff0090', '#ff4fd8'], gpu: ['#ffb000', '#fcee0a'],
+      down: '#00f0ff', up: '#ff2bd6', disk: '#fcee0a', proc: '#ff2bd6', hot: ['#ff0040', '#ff4d6d'] },
+
+    { id: 'terminal', name: 'Terminal', desc: 'Chữ xanh lá kiểu màn hình hacker, font mono', style: 'term',
+      bg: '#010702', card: '#010702', card2: '#010702', border: '#11461f', text: '#4dff7c', text2: '#8dffad',
+      muted: '#2fd35b', sub: '#1fa043', dim: '#178035', track: '#072410', tick: '#000000', barbg: '#072410',
+      accent: '#4dff7c', live: '#4dff7c', knob: '#010702', glow: true, font: MONO, clock: MONO, bars: true,
+      cpu: ['#1fa043', '#4dff7c'], ram: ['#1fa043', '#4dff7c'], gpu: ['#1fa043', '#4dff7c'],
+      down: '#4dff7c', up: '#b6ff4d', disk: '#4dff7c', proc: '#8dffad', hot: ['#d61f1f', '#ff5555'] },
+
+    { id: 'amber', name: 'Retro CRT', desc: 'Màn hình hổ phách thập niên 80, font mono', style: 'term',
+      bg: '#0a0600', card: '#0a0600', card2: '#0a0600', border: '#4a3000', text: '#ffb000', text2: '#ffca4d',
+      muted: '#e09400', sub: '#b37600', dim: '#805400', track: '#211500', tick: '#000000', barbg: '#211500',
+      accent: '#ffb000', live: '#ffb000', knob: '#0a0600', glow: true, font: MONO, clock: MONO, bars: true,
+      cpu: ['#b37600', '#ffb000'], ram: ['#b37600', '#ffb000'], gpu: ['#b37600', '#ffb000'],
+      down: '#ffb000', up: '#ff7a00', disk: '#ffb000', proc: '#ffca4d', hot: ['#d63a00', '#ff5a1f'] },
+
+    { id: 'glass', name: 'Aurora Glass', desc: 'Nền cực quang, ô kính mờ trong suốt', style: 'glass',
+      bg: '#0b1026', card: '#ffffff', card2: '#ffffff', border: '#ffffff', text: '#ffffff', text2: '#eef2ff',
+      muted: '#c7d2fe', sub: '#a5b4fc', dim: '#8b9ae6', track: '#ffffff', tick: '#000000', barbg: '#ffffff',
+      accent: '#f0abfc', live: '#5eead4', knob: '#ffffff', font: SANS, clock: THIN,
+      cpu: ['#22d3ee', '#a5f3fc'], ram: ['#e879f9', '#f5d0fe'], gpu: ['#5eead4', '#ccfbf1'],
+      down: '#a5f3fc', up: '#f5d0fe', disk: '#fde68a', proc: '#fdba74', hot: ['#f43f5e', '#fda4af'] },
+
+    { id: 'sunset', name: 'Sunset', desc: 'Tông ấm cam-hồng, ô màu đặc', style: 'flat',
+      bg: '#1a0b12', card: '#2a1220', card2: '#2a1220', border: '#2a1220', text: '#fff1ec', text2: '#fcd9cf',
+      muted: '#f0a8a8', sub: '#c48d93', dim: '#966a76', track: '#3d1d2e', tick: '#000000', barbg: '#3d1d2e',
+      accent: '#fb7185', live: '#fb923c', knob: '#ffffff', font: SANS, clock: SANS, clockW: 700,
+      cpu: ['#ea580c', '#fb923c'], ram: ['#e11d48', '#fb7185'], gpu: ['#d97706', '#fcd34d'],
+      down: '#fdba74', up: '#f9a8d4', disk: '#fcd34d', proc: '#fb7185', hot: ['#dc2626', '#f87171'] },
+
+    { id: 'nord', name: 'Nord', desc: 'Xanh xám Bắc Âu, dịu mắt', style: 'flat',
+      bg: '#242933', card: '#2e3440', card2: '#2e3440', border: '#2e3440', text: '#eceff4', text2: '#d8dee9',
+      muted: '#a3adbf', sub: '#8a93a6', dim: '#6b7489', track: '#3b4252', tick: '#000000', barbg: '#3b4252',
+      accent: '#88c0d0', live: '#a3be8c', knob: '#eceff4', font: SANS, clock: THIN,
+      cpu: ['#5e81ac', '#88c0d0'], ram: ['#a07a99', '#b48ead'], gpu: ['#8fbcbb', '#a3be8c'],
+      down: '#88c0d0', up: '#d08770', disk: '#ebcb8b', proc: '#d08770', hot: ['#bf616a', '#d08770'] },
+
+    { id: 'dracula', name: 'Dracula', desc: 'Tím đêm, màu kẹo, viền dày', style: 'soft',
+      bg: '#1b1c25', card: '#282a36', card2: '#242632', border: '#44475a', text: '#f8f8f2', text2: '#e2e2dc',
+      muted: '#bd93f9', sub: '#8a8fb0', dim: '#6272a4', track: '#343746', tick: '#3c3f52', barbg: '#343746',
+      accent: '#ff79c6', live: '#50fa7b', knob: '#f8f8f2',
+      cpu: ['#62c5dc', '#8be9fd'], ram: ['#a77bf3', '#d6b8ff'], gpu: ['#3fd96a', '#8affa8'],
+      down: '#8be9fd', up: '#ff79c6', disk: '#f1fa8c', proc: '#ffb86c', hot: ['#ff5555', '#ff6e6e'] },
+
+    { id: 'paper', name: 'Paper', desc: 'Nền sáng trắng, dùng ban ngày', style: 'paper',
+      bg: '#eceff3', card: '#ffffff', card2: '#fafbfc', border: '#dde3ea', text: '#0f172a', text2: '#334155',
+      muted: '#64748b', sub: '#64748b', dim: '#94a3b8', track: '#e8edf2', tick: '#d5dce5', barbg: '#e8edf2',
+      accent: '#0284c7', live: '#16a34a', knob: '#ffffff', clockW: 300,
+      cpu: ['#0284c7', '#38bdf8'], ram: ['#7c3aed', '#a78bfa'], gpu: ['#059669', '#34d399'],
+      down: '#0891b2', up: '#db2777', disk: '#d97706', proc: '#ea580c', hot: ['#dc2626', '#f87171'] },
+
+    { id: 'mono', name: 'Mono', desc: 'Trắng đen tối giản, chữ to, không màu', style: 'line',
+      bg: '#0a0a0a', card: '#0a0a0a', card2: '#0a0a0a', border: '#262626', text: '#fafafa', text2: '#d4d4d4',
+      muted: '#a3a3a3', sub: '#737373', dim: '#525252', track: '#1f1f1f', tick: '#000000', barbg: '#1f1f1f',
+      accent: '#fafafa', live: '#fafafa', knob: '#0a0a0a', font: SANS, clock: THIN, thinGauge: true,
+      cpu: ['#d4d4d4', '#fafafa'], ram: ['#d4d4d4', '#fafafa'], gpu: ['#d4d4d4', '#fafafa'],
+      down: '#fafafa', up: '#8a8a8a', disk: '#fafafa', proc: '#fafafa', hot: ['#dc2626', '#f87171'] }
+  ];
+
+  var T = THEMES[0], themeIdx = 0;
+
+  function themeCss(t) {
+    var r = '1.2rem', st = t.style, s = '';
+    var font = t.font || SANS, clock = t.clock || THIN;
+    var glow = function (c, a) { return t.glow ? 'text-shadow:0 0 .8rem ' + hexA(c, a || 0.55) + ';' : ''; };
+    s += 'html,body{background:' + t.bg + ';}';
+    s += 'body{color:' + t.text + ';font-family:' + font + ';}';
+    s += '#time{font-family:' + clock + ';font-weight:' + (t.clockW || 200) + ';' + glow(t.text, 0.6) + '}';
+    s += '#sec{color:' + t.dim + ';}#dow{color:' + t.accent + ';' + glow(t.accent) + '}#dmy{color:' + t.muted + ';}';
+    s += '.hsub{color:' + t.sub + ';}.hsub.err{color:' + t.hot[1] + ';}';
+    s += '#live{background:' + t.dim + ';}#live.on{background:' + t.live + ';-webkit-box-shadow:0 0 .7rem ' + t.live + ';box-shadow:0 0 .7rem ' + t.live + ';}';
+    s += '#live.bad{background:' + t.hot[0] + ';}';
+    s += '.bat{color:' + t.muted + ';}.batbox{border-color:' + t.sub + ';}.batbox:after{background:' + t.sub + ';}';
+    s += '.host{' + glow(t.text, 0.4) + '}';
+    s += '.lbl{color:' + t.muted + ';}.chr{color:' + t.text2 + ';}';
+    s += '.gnum,.nv{' + glow(t.text, 0.5) + '}';
+    s += '.gu,.gs,.v small,.nv small,.dl span,.dl em small,.io{color:' + t.sub + ';}';
+    s += '.k{color:' + t.dim + ';}.io b{color:' + t.text + ';}.pn{color:' + t.text2 + ';}';
+    s += '.core,.bar{background:' + t.barbg + ';}';
+    s += '.tri.dn{border-top:.55rem solid ' + t.down + ';}.tri.up{border-bottom:.55rem solid ' + t.up + ';}';
+    s += '.pb{background:' + hexA(t.proc, st === 'paper' ? 0.12 : 0.15) + ';}.pc{color:' + t.proc + ';' + glow(t.proc) + '}';
+    s += '.d-cpu{background:' + t.cpu[1] + '}.d-ram{background:' + t.ram[1] + '}.d-gpu{background:' + t.gpu[1] + '}';
+    s += '.d-down{background:' + t.down + '}.d-disk{background:' + t.disk + '}.d-proc{background:' + t.proc + '}';
+    if (t.upper) s += '.k,.lbl,.gs{letter-spacing:.22rem;}.gnum,.nv{font-weight:700;}';
+
+    // ---- card treatments
+    var cardBase = 'background:' + t.card + ';background:-webkit-linear-gradient(top,' + t.card + ',' + t.card2 + ');background:linear-gradient(to bottom,' + t.card + ',' + t.card2 + ');border:1px solid ' + t.border + ';';
+    var radius = function (v) { return '-webkit-border-radius:' + v + ';border-radius:' + v + ';'; };
+    if (st === 'soft') {
+      s += '.card{' + cardBase + radius(r) + '}.core,.bar,.pb{' + radius('.3rem') + '}.bar i{' + radius('.3rem') + '}';
+    } else if (st === 'line') {
+      s += '.card{background:transparent;border:1px solid ' + t.border + ';' + radius('.9rem') + '}.core,.bar,.pb,.bar i{' + radius('.2rem') + '}';
+      s += '.ch .dot{-webkit-border-radius:0;border-radius:0;width:.5rem;height:.5rem;}';
+    } else if (st === 'flat') {
+      s += '.card{background:' + t.card + ';border:0;' + radius('.5rem') + '}.core,.bar,.pb,.bar i{' + radius('.15rem') + '}';
+      s += '.ch .dot{-webkit-border-radius:.15rem;border-radius:.15rem;}';
+    } else if (st === 'neon') {
+      s += '.card{' + cardBase + radius('0') + 'border-color:' + t.border + ';-webkit-box-shadow:inset 0 0 1.6rem ' + hexA(t.ram[1], 0.12) + ',0 0 .8rem ' + hexA(t.ram[1], 0.18) + ';box-shadow:inset 0 0 1.6rem ' + hexA(t.ram[1], 0.12) + ',0 0 .8rem ' + hexA(t.ram[1], 0.18) + ';}';
+      s += '.card:before{content:"";position:absolute;right:-1.1rem;top:-1.1rem;width:2.2rem;height:2.2rem;background:' + t.bg + ';border-bottom:1px solid ' + t.border + ';-webkit-transform:rotate(45deg);transform:rotate(45deg);z-index:2;}';
+      s += '.card:after{content:"";position:absolute;left:0;top:0;width:3rem;height:.25rem;background:' + t.accent + ';-webkit-box-shadow:0 0 .8rem ' + t.accent + ';box-shadow:0 0 .8rem ' + t.accent + ';}';
+      s += '.ch .dot{-webkit-border-radius:0;border-radius:0;-webkit-transform:rotate(45deg);transform:rotate(45deg);}';
+      s += '.chr{right:1.2rem;}';
+    } else if (st === 'term') {
+      s += '.card{background:transparent;border:1px solid ' + t.border + ';' + radius('0') + '}';
+      s += '.ch .dot{display:none;}.lbl:before{content:"[ ";color:' + t.dim + ';}.lbl:after{content:" ]";color:' + t.dim + ';}';
+      s += '.lbl{letter-spacing:.1rem;}.ch{top:.9rem;}';
+      s += '.card:before{content:"";position:absolute;left:0;right:0;top:0;bottom:0;background:-webkit-repeating-linear-gradient(top,rgba(0,0,0,0) 0,rgba(0,0,0,0) .2rem,' + hexA(t.text, 0.035) + ' .2rem,' + hexA(t.text, 0.035) + ' .3rem);background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) .2rem,' + hexA(t.text, 0.035) + ' .2rem,' + hexA(t.text, 0.035) + ' .3rem);pointer-events:none;}';
+      s += '#time{letter-spacing:0;}#live.on{-webkit-border-radius:0;border-radius:0;width:.9rem;height:1.3rem;top:-.05rem;-webkit-animation:blink 1s steps(1) infinite;animation:blink 1s steps(1) infinite;}';
+      s += '@-webkit-keyframes blink{50%{opacity:0}}@keyframes blink{50%{opacity:0}}';
+    } else if (st === 'glass') {
+      s += 'html,body{background:' + t.bg + ';background:-webkit-radial-gradient(15% 10%,circle,#7c3aed 0,rgba(124,58,237,0) 45%),-webkit-radial-gradient(85% 25%,circle,#0891b2 0,rgba(8,145,178,0) 45%),-webkit-radial-gradient(55% 100%,circle,#db2777 0,rgba(219,39,119,0) 50%),' + t.bg + ';';
+      s += 'background:radial-gradient(circle at 15% 10%,#7c3aed 0,rgba(124,58,237,0) 45%),radial-gradient(circle at 85% 25%,#0891b2 0,rgba(8,145,178,0) 45%),radial-gradient(circle at 55% 100%,#db2777 0,rgba(219,39,119,0) 50%),' + t.bg + ';}';
+      s += '.card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);' + radius('1.6rem') + '-webkit-backdrop-filter:blur(1.2rem);backdrop-filter:blur(1.2rem);-webkit-box-shadow:0 .8rem 2rem rgba(0,0,0,.25);box-shadow:0 .8rem 2rem rgba(0,0,0,.25);}';
+      s += '.core,.bar{background:rgba(255,255,255,.12);' + radius('.4rem') + '}.bar i,.pb{' + radius('.4rem') + '}.pb{background:rgba(255,255,255,.12);}';
+    } else if (st === 'paper') {
+      s += '.card{' + cardBase + radius(r) + '-webkit-box-shadow:0 .1rem .3rem rgba(15,23,42,.06),0 .6rem 1.6rem rgba(15,23,42,.06);box-shadow:0 .1rem .3rem rgba(15,23,42,.06),0 .6rem 1.6rem rgba(15,23,42,.06);}';
+      s += '.core,.bar,.pb,.bar i{' + radius('.3rem') + '}';
+    }
+    s += '#toast{background:' + (st === 'glass' ? 'rgba(20,20,50,.75)' : t.card) + ';color:' + t.text + ';border:1px solid ' + t.accent + ';' + radius(st === 'term' || st === 'neon' ? '0' : '3rem') + glow(t.accent) + '}';
+    s += '#toast small{color:' + t.sub + ';}';
+    return s;
+  }
+
+  // glass theme: track colours are translucent white
+  function trackCol() { return T.style === 'glass' ? 'rgba(255,255,255,.14)' : T.track; }
+  function barCol() { return T.style === 'glass' ? 'rgba(255,255,255,.12)' : T.barbg; }
+
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+  function applyTheme(i, announce) {
+    themeIdx = (i + THEMES.length) % THEMES.length;
+    T = THEMES[themeIdx];
+    $('theme').innerHTML = themeCss(T);
+    var meta = document.querySelector ? document.querySelector('meta[name=theme-color]') : null;
+    if (meta) meta.setAttribute('content', T.bg);
+    G.cpu.c = T.cpu; G.ram.c = T.ram; G.gpu.c = T.gpu;
+    if (!FIXED_THEME) store('ms-theme', T.id);
+    if (lastData) update(lastData, true);
+    drawGauges(); drawSparks();
+    if (announce) toast(T.name, (themeIdx + 1) + ' / ' + THEMES.length + ' · ' + T.desc);
+  }
+  var tt;
+  function toast(a, b) {
+    var el = $('toast');
+    el.innerHTML = esc(a) + '<small>' + esc(b) + '</small>';
+    el.className = 'show';
+    clearTimeout(tt);
+    tt = setTimeout(function () { el.className = ''; }, 1800);
+  }
+  function findTheme(id) { for (var i = 0; i < THEMES.length; i++) if (THEMES[i].id === id) return i; return -1; }
+
+  // Locked to the default colours. Set to '' to re-enable "tap anywhere to cycle themes".
+  var FIXED_THEME = 'midnight';
+  if (!FIXED_THEME) document.addEventListener('click', function () { applyTheme(themeIdx + 1, true); }, false);
+  else document.body.style.cursor = 'default';
+
+  // =================================================================== helpers
+  function bytes(b, rate) {
+    var u = ['B', 'KB', 'MB', 'GB', 'TB'], i = 0;
+    b = b || 0;
+    while (b >= 1000 && i < u.length - 1) { b /= 1024; i++; }
+    var n = i === 0 ? b.toFixed(0) : (b >= 100 ? b.toFixed(0) : (b >= 10 ? b.toFixed(1) : b.toFixed(2)));
+    return n + '<small>' + u[i] + (rate ? '/s' : '') + '</small>';
+  }
+  function gb(b) { return (b / 1073741824).toFixed(1); }
+  function uptime(s) {
+    var d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+    if (d > 0) return d + ' ngày ' + h + ' giờ';
+    if (h > 0) return h + ' giờ ' + m + ' phút';
+    return m + ' phút';
+  }
+
+  // =================================================================== layout
+  var canvases = document.getElementsByTagName('canvas');
+  function sizeCanvases() {
+    for (var i = 0; i < canvases.length; i++) {
+      var c = canvases[i];
+      var w = parseFloat(c.getAttribute('data-w')) * unit, h = parseFloat(c.getAttribute('data-h')) * unit;
+      c.style.width = w + 'px'; c.style.height = h + 'px';
+      c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+    }
+  }
+  function layout() {
+    var W = window.innerWidth, H = window.innerHeight;
+    var rot = allowRotate && H > W * 1.15;
+    var aw = rot ? H : W, ah = rot ? W : H;
+    var s = Math.min(aw / DW, ah / DH);
+    unit = s * 10;
+    document.documentElement.style.fontSize = unit + 'px';
+    var w = DW * s, h = DH * s, tf;
+    if (LITE && !rot) {
+      // no CSS transform in lite mode (old Android leaves ghost copies of canvases inside transformed parents)
+      app.style.webkitTransform = app.style.transform = 'none';
+      app.style.left = Math.round((W - w) / 2 + shiftX) + 'px';
+      app.style.top = Math.round((H - h) / 2 + shiftY) + 'px';
+    } else {
+      app.style.left = app.style.top = '0';
+      if (rot) tf = 'translate(' + Math.round((W + h) / 2 + shiftY) + 'px,' + Math.round((H - w) / 2 + shiftX) + 'px) rotate(90deg)';
+      else tf = 'translate(' + Math.round((W - w) / 2 + shiftX) + 'px,' + Math.round((H - h) / 2 + shiftY) + 'px)';
+      app.style.webkitTransform = tf; app.style.transform = tf;
+    }
+    sizeCanvases();
+    drawGauges(); drawSparks();
+  }
+  var rt;
+  function relayout() { clearTimeout(rt); rt = setTimeout(layout, 120); }
+  window.addEventListener('resize', relayout, false);
+  window.addEventListener('orientationchange', relayout, false);
+
+  // AMOLED: nudge everything a few px every 2 min to avoid burn-in
+  setInterval(function () {
+    shiftX = Math.round(Math.random() * 6 - 3);
+    shiftY = Math.round(Math.random() * 6 - 3);
+    layout();
+  }, 120000);
+
+  // =================================================================== gauges
+  var G = {
+    cpu: { id: 'g-cpu', c: T.cpu, cur: 0, tgt: 0 },
+    ram: { id: 'g-ram', c: T.ram, cur: 0, tgt: 0 },
+    gpu: { id: 'g-gpu', c: T.gpu, cur: 0, tgt: 0 }
+  };
+  function drawGauge(g) {
+    var cv = $(g.id);
+    cv.width = cv.width; // full wipe (old Android clearRect leaves ghosts under CSS transforms)
+    var ctx = cv.getContext('2d');
+    var w = cv.width / dpr, h = cv.height / dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.shadowBlur = 0; ctx.shadowColor = 'rgba(0,0,0,0)';
+    var cx = w / 2, cy = h / 2, v = Math.max(0, Math.min(100, g.cur));
+    var lw = w * (T.thinGauge ? 0.03 : 0.075), r = w / 2 - w * 0.0375 - 3;
+    var a0 = Math.PI * 0.75, span = Math.PI * 1.5, col = g.tgt >= 90 ? T.hot : g.c, i, a;
+
+    if (T.bars) {
+      // terminal style: segmented blocks
+      var segs = 24, on = Math.round(v / 100 * segs), gapA = span / segs * 0.28;
+      ctx.lineWidth = w * 0.075; ctx.lineCap = 'butt';
+      for (i = 0; i < segs; i++) {
+        a = a0 + span * i / segs;
+        ctx.strokeStyle = i < on ? col[1] : trackCol();
+        if (i < on && T.glow) { ctx.shadowBlur = 6; ctx.shadowColor = col[1]; } else ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.arc(cx, cy, r, a, a + span / segs - gapA, false); ctx.stroke();
+      }
+      return;
+    }
+    // ticks
+    if (T.tick !== '#000000') {
+      ctx.strokeStyle = T.tick; ctx.lineWidth = 1;
+      for (i = 0; i <= 20; i++) {
+        a = a0 + span * i / 20;
+        var r1 = r - w * 0.067, r2 = r1 - (i % 5 === 0 ? w * 0.052 : w * 0.026);
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+        ctx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
+        ctx.stroke();
+      }
+    }
+    ctx.lineCap = T.style === 'neon' ? 'butt' : 'round'; ctx.lineWidth = lw;
+    ctx.strokeStyle = trackCol();
+    ctx.beginPath(); ctx.arc(cx, cy, r, a0, a0 + span, false); ctx.stroke();
+    if (v > 0.3) {
+      var grd = ctx.createLinearGradient(0, h, w, 0);
+      grd.addColorStop(0, col[0]); grd.addColorStop(1, col[1]);
+      ctx.strokeStyle = grd;
+      if (T.glow) { ctx.shadowBlur = lw * 1.4; ctx.shadowColor = col[1]; }
+      ctx.lineWidth = T.thinGauge ? lw * 2 : lw;
+      ctx.beginPath(); ctx.arc(cx, cy, r, a0, a0 + span * v / 100, false); ctx.stroke();
+      ctx.shadowBlur = 0;
+      var ea = a0 + span * v / 100;
+      ctx.fillStyle = T.knob;
+      ctx.beginPath(); ctx.arc(cx + Math.cos(ea) * r, cy + Math.sin(ea) * r, (T.thinGauge ? lw * 1.6 : lw * 0.22), 0, Math.PI * 2, false); ctx.fill();
+      if (T.thinGauge) { ctx.strokeStyle = col[1]; ctx.lineWidth = 2; ctx.stroke(); }
+    }
+  }
+  function drawGauges() { for (var k in G) drawGauge(G[k]); }
+
+  var raf = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+    function (f) { return setTimeout(f, 33); };
+  var animating = false;
+  function animate() {
+    var moving = false;
+    for (var k in G) {
+      var g = G[k], d = g.tgt - g.cur;
+      if (Math.abs(d) > 0.15) { g.cur += d * (LITE ? 0.3 : 0.16); moving = true; } else g.cur = g.tgt;
+    }
+    drawGauges();
+    if (moving) raf(animate); else animating = false;
+  }
+  function kick() {
+    if (!animating) { animating = true; raf(animate); }
+  }
+
+  // =================================================================== sparklines
+  var hist = { cpu: [], ram: [], gpu: [], down: [], up: [] };
+  function push(k, v) { var a = hist[k]; a.push(v); if (a.length > N) a.shift(); }
+  function path(ctx, w, h, data, max) {
+    var step = w / (N - 1), x0 = w - (data.length - 1) * step;
+    ctx.beginPath();
+    for (var i = 0; i < data.length; i++) {
+      var x = x0 + i * step, y = h - 1 - Math.min(1, data[i] / max) * (h - 5);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    return x0;
+  }
+  function spark(ctx, w, h, data, max, color, fill, lw) {
+    if (data.length < 2) return;
+    if (T.bars) {
+      // terminal: vertical bar histogram
+      var step = w / N, x0 = w - data.length * step;
+      ctx.fillStyle = hexA(color, fill ? 0.55 : 0.9);
+      for (var i = 0; i < data.length; i++) {
+        var bh = Math.max(1, Math.min(1, data[i] / max) * (h - 3));
+        if (fill) ctx.fillRect(x0 + i * step + 1, h - bh, step - 2, bh);
+        else ctx.fillRect(x0 + i * step + 1, h - bh, step - 2, 1.5);
+      }
+      return;
+    }
+    var x0b = path(ctx, w, h, data, max);
+    if (fill) {
+      ctx.lineTo(w, h); ctx.lineTo(x0b, h); ctx.closePath();
+      var grd = ctx.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, hexA(color, T.style === 'paper' ? 0.22 : 0.32)); grd.addColorStop(1, hexA(color, 0));
+      ctx.fillStyle = grd; ctx.fill();
+      path(ctx, w, h, data, max);
+    }
+    if (T.glow) { ctx.shadowBlur = 6; ctx.shadowColor = color; }
+    ctx.strokeStyle = color; ctx.lineWidth = lw || 1.5; ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+  function sctx(id) {
+    var c = $(id);
+    c.width = c.width; // full wipe, see drawGauge
+    var ctx = c.getContext('2d'), w = c.width / dpr, h = c.height / dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+    MS.clipBottom(ctx, w, h, unit * 1.2 - 1); // follow card corners without overflow:hidden
+    return { ctx: ctx, w: w, h: h };
+  }
+  function drawSparks() {
+    var s;
+    s = sctx('s-cpu'); spark(s.ctx, s.w, s.h, hist.cpu, 100, T.cpu[1], true);
+    s = sctx('s-ram'); spark(s.ctx, s.w, s.h, hist.ram, 100, T.ram[1], true);
+    s = sctx('s-gpu'); spark(s.ctx, s.w, s.h, hist.gpu, 100, T.gpu[1], true);
+    var m = 64 * 1024, i;
+    for (i = 0; i < hist.down.length; i++) m = Math.max(m, hist.down[i], hist.up[i]);
+    s = sctx('s-net');
+    spark(s.ctx, s.w, s.h, hist.down, m * 1.1, T.down, true);
+    spark(s.ctx, s.w, s.h, hist.up, m * 1.1, T.up, false, 1.3);
+  }
+
+  // =================================================================== clock
+  var offset = 0, tz = null;
+  var DOW = ['CHỦ NHẬT', 'THỨ HAI', 'THỨ BA', 'THỨ TƯ', 'THỨ NĂM', 'THỨ SÁU', 'THỨ BẢY'];
+  function clock() {
+    var d = tz === null ? new Date() : new Date(+new Date() + offset + tz * 60000);
+    var g = tz === null
+      ? { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds(), w: d.getDay(), D: d.getDate(), M: d.getMonth(), Y: d.getFullYear() }
+      : { h: d.getUTCHours(), m: d.getUTCMinutes(), s: d.getUTCSeconds(), w: d.getUTCDay(), D: d.getUTCDate(), M: d.getUTCMonth(), Y: d.getUTCFullYear() };
+    html('time', pad(g.h) + ':' + pad(g.m) + '<span id="sec">' + pad(g.s) + '</span>');
+    html('dow', DOW[g.w]);
+    html('dmy', pad(g.D) + '.' + pad(g.M + 1) + '.' + g.Y);
+  }
+  setInterval(clock, 500);
+
+  // =================================================================== render
+  var coreN = -1;
+  function renderCores(arr) {
+    var box = $('cores'), i, n = Math.min(arr.length, 16);
+    if (arr.length !== coreN) {
+      coreN = arr.length;
+      var gap = n > 8 ? 0.15 : 0.3, bw = (7.2 - gap * (n - 1)) / n, s = '';
+      for (i = 0; i < n; i++) s += '<div class="core" style="left:' + (i * (bw + gap)).toFixed(2) + 'rem;width:' + bw.toFixed(2) + 'rem"><i id="core' + i + '"></i></div>';
+      box.innerHTML = s;
+    }
+    for (i = 0; i < n; i++) {
+      var el = $('core' + i), v = arr[i];
+      el.style.height = Math.max(2, v) + '%';
+      el.style.background = v >= 90 ? T.hot[1] : T.cpu[1];
+      el.parentNode.style.background = barCol();
+    }
+  }
+  function tempColor(t) { return t >= 85 ? T.hot[1] : t >= 70 ? '#fbbf24' : (T.bars ? T.text : '#34d399'); }
+
+  (function buildProcRows() {
+    var s = '';
+    for (var i = 0; i < 5; i++) s += '<div class="pr"><div class="pb" id="pb' + i + '"></div><span class="pn" id="pn' + i + '"></span><span class="pc" id="pc' + i + '"></span></div>';
+    $('plist').innerHTML = s;
+  })();
+
+  var lastData = null;
+  function update(d, redraw) {
+    lastData = d;
+    $('host').innerHTML = esc(d.host || '');
+    var sub = [];
+    if (d.os) sub.push(esc(d.os));
+    if (d.ip) sub.push(esc(d.ip));
+    if (d.uptime) sub.push('Bật ' + uptime(d.uptime));
+    html('hsub', sub.join(' &nbsp;·&nbsp; '));
+    $('hsub').className = 'hsub';
+    offset = d.t - (+new Date()); tz = d.tz;
+
+    if (d.bat && d.bat.pct > 0) {
+      $('bat').className = 'bat';
+      $('batfill').style.width = (d.bat.pct * 0.017) + 'rem';
+      $('batfill').style.background = d.bat.pct <= 20 && !d.bat.ac ? T.hot[0] : T.live;
+      html('batt', d.bat.pct + '%' + (d.bat.ac ? ' · sạc' : ''));
+    } else $('bat').className = 'bat hide';
+
+    var c = d.cpu || {};
+    G.cpu.tgt = c.load || 0;
+    html('cpu-v', String(c.load || 0));
+    html('cpu-name', esc(c.name || ''));
+    html('cpu-ghz', (c.ghz || 0).toFixed(2) + '<small>GHz</small>');
+    html('cpu-procs', String(d.procs || 0));
+    if (c.temp) { html('cpu-temp', c.temp + '°C'); $('cpu-temp').style.color = tempColor(c.temp); }
+    else html('cpu-temp', '&nbsp;');
+    renderCores(c.cores || []);
+
+    var r = d.ram || {}, rp = r.total ? Math.round(r.used / r.total * 100) : 0;
+    G.ram.tgt = rp;
+    html('ram-v', String(rp));
+    html('ram-total', gb(r.total || 0) + ' GB');
+    html('ram-used', gb(r.used || 0) + '<small>GB</small>');
+    html('ram-free', gb(r.free || 0) + '<small>GB</small>');
+    html('ram-commit', gb(r.commit || 0) + '<small>/ ' + Math.round((r.commitLimit || 0) / 1073741824) + '</small>');
+
+    var g = d.gpu || {};
+    G.gpu.tgt = g.load || 0;
+    html('gpu-v', String(g.load || 0));
+    html('gpu-name', esc(g.name || ''));
+    html('gpu-dec', (g.decode || 0) + '<small>%</small>');
+    html('gpu-copy', (g.copy || 0) + '<small>%</small>');
+    html('gpu-mem', bytes(g.mem || 0));
+
+    var n = d.net || {};
+    html('net-down', bytes(n.down, true));
+    html('net-up', bytes(n.up, true));
+    html('net-if', esc(d.iface || '') + (d.ssid ? ' · ' + esc(d.ssid) : ''));
+
+    var k = d.disk || {}, drv = k.drives || [], i;
+    html('disk-busy', 'Hoạt động ' + (k.busy || 0) + '%');
+    html('disk-r', bytes(k.read, true));
+    html('disk-w', bytes(k.write, true));
+    for (i = 0; i < 2; i++) {
+      var x = drv[i];
+      if (!x) { $('drv' + i).className = 'drv hide'; continue; }
+      $('drv' + i).className = 'drv';
+      var used = x.size - x.free, p = Math.round(used / x.size * 100);
+      html('drv' + i + '-n', esc(x.id) + ' <small>' + p + '%</small>');
+      html('drv' + i + '-t', Math.round(used / 1073741824) + ' / ' + Math.round(x.size / 1073741824) + ' GB');
+      var b = $('drv' + i + '-b');
+      b.style.width = p + '%';
+      b.style.background = p >= 90 ? T.hot[1] : T.disk;
+      b.parentNode.style.background = barCol();
+    }
+
+    var t = d.top || [], mx = 10;
+    for (i = 0; i < t.length; i++) mx = Math.max(mx, t[i].c);
+    for (i = 0; i < 5; i++) {
+      var q = t[i];
+      html('pn' + i, q ? esc(q.n) : '');
+      html('pc' + i, q ? q.c.toFixed(1) + '%' : '');
+      $('pb' + i).style.width = q ? Math.max(1, q.c / mx * 100) + '%' : '0';
+    }
+
+    if (!redraw) {
+      push('cpu', c.load || 0); push('ram', rp); push('gpu', g.load || 0);
+      push('down', n.down || 0); push('up', n.up || 0);
+      kick(); drawSparks();
+    }
+  }
+
+  // =================================================================== polling
+  var lastOk = 0;
+  function setLive(ok) {
+    $('live').className = 'dot ' + (ok ? 'on' : 'bad');
+    app.className = ok ? '' : 'off';
+    if (!ok) { $('hsub').innerHTML = 'Mất kết nối tới máy chủ – đang thử lại…'; cache.hsub = null; $('hsub').className = 'hsub err'; }
+  }
+  function poll() {
+    var done = false, x = new XMLHttpRequest();
+    var to = setTimeout(function () { if (!done) x.abort(); }, 5000);
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4 || done) return;
+      done = true; clearTimeout(to);
+      var ok = false;
+      if (x.status === 200) {
+        try { var d = JSON.parse(x.responseText); if (d && d.cpu) { update(d); ok = true; } } catch (e) {}
+      }
+      if (ok) { lastOk = +new Date(); setLive(true); }
+      else if (+new Date() - lastOk > 6000) setLive(false);
+      setTimeout(poll, POLL);
+    };
+    x.open('GET', '/api/stats?_=' + (+new Date()), true);
+    x.send(null);
+  }
+
+  // =================================================================== start
+  var m = /[?&]theme=([\w-]+)/.exec(location.search);
+  var start = FIXED_THEME ? findTheme(FIXED_THEME) : (m ? findTheme(m[1]) : findTheme(store('ms-theme') || ''));
+  applyTheme(start < 0 ? 0 : start, false);
+  layout();
+  clock();
+  poll();
+})();
+</script>
+</body>
+</html>

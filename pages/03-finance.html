@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#05070a">
+<title>Desk-Buddy - Tai chinh</title>
+<meta name="menu" content="Tai chinh: ty gia Vietcombank, gia crypto (BTC, ETH...)">
+<link rel="stylesheet" href="common.css">
+<style>
+#usd-sell{position:absolute;left:1.3rem;top:4.1rem;font-size:4rem;font-weight:600;line-height:4.8rem;letter-spacing:-.1rem;}
+#usd-sell small{font-size:1.5rem;color:#7b8799;font-weight:500;margin-left:.3rem;letter-spacing:0;}
+.usd-k{position:absolute;left:1.3rem;top:3.2rem;}
+.usd-side{position:absolute;left:16rem;top:3.2rem;width:6.8rem;}
+.usd-side .v{font-size:1.3rem;margin-bottom:.45rem;}
+.trow{position:absolute;left:1.3rem;right:1.3rem;height:1.55rem;line-height:1.55rem;font-size:1.1rem;white-space:nowrap;}
+.trow b{display:inline-block;width:3.6rem;font-weight:700;}
+.trow em{font-style:normal;color:#5f6b7e;font-size:.9rem;}
+.trow .c1{position:absolute;right:7rem;top:0;color:#aeb8c6;}
+.trow .c2{position:absolute;right:0;top:0;font-weight:600;}
+.trow.alt{background:rgba(255,255,255,.025);}
+.thead{position:absolute;left:1.3rem;right:1.3rem;top:2.95rem;font-size:.85rem;color:#5f6b7e;letter-spacing:.08rem;}
+.thead .c1{position:absolute;right:7rem;top:0;}
+.thead .c2{position:absolute;right:0;top:0;}
+.cp{position:absolute;left:1.3rem;top:3.2rem;font-size:2.7rem;font-weight:600;line-height:3rem;letter-spacing:-.05rem;white-space:nowrap;}
+.cc{position:absolute;right:1.3rem;top:3.75rem;font-size:1.1rem;line-height:1.8rem;}
+.cv{position:absolute;left:1.3rem;top:6.5rem;font-size:1.05rem;color:#7b8799;white-space:nowrap;}
+.cv b{color:#cdd5df;font-weight:600;}
+.chl{position:absolute;right:1.3rem;top:6.5rem;font-size:.9rem;color:#5f6b7e;white-space:nowrap;}
+.cspark{position:absolute;left:0;bottom:0;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hdr">
+    <div class="title"><span id="live" class="dot"></span>TÀI CHÍNH<em>Tỷ giá &amp; Crypto</em></div>
+    <div class="hsub" id="hsub">Đang tải…</div>
+    <div class="clock"><div class="date"><div id="dow">&nbsp;</div><div id="dmy">&nbsp;</div></div><div id="time">--:--<span id="sec">--</span></div></div>
+  </div>
+
+  <div class="card" style="left:1.2rem;top:6.4rem;width:24rem;height:10.6rem;">
+    <div class="ch"><span class="dot" style="background:#34d399"></span><span class="lbl">USD / VND</span><span class="chr">Vietcombank</span></div>
+    <div class="k usd-k">GIÁ BÁN</div>
+    <div id="usd-sell">–</div>
+    <div class="usd-side">
+      <div class="k">MUA TIỀN MẶT</div><div class="v" id="usd-buy">–</div>
+      <div class="k">MUA CK</div><div class="v" id="usd-tr">–</div>
+    </div>
+  </div>
+
+  <div class="card" style="left:1.2rem;top:17.8rem;width:24rem;height:17rem;">
+    <div class="ch"><span class="dot" style="background:#a78bfa"></span><span class="lbl">NGOẠI TỆ</span><span class="chr">VND</span></div>
+    <div class="thead"><span>MÃ</span><span class="c1">MUA CK</span><span class="c2">BÁN</span></div>
+    <div id="rates"></div>
+  </div>
+
+  <div id="coins"></div>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  var $ = MS.$, html = MS.html, fmt = MS.fmt, esc = MS.esc;
+  var NAMES = { BTC: ['Bitcoin', '#f7931a'], ETH: ['Ethereum', '#8c9eff'], BNB: ['BNB', '#f3ba2f'], SOL: ['Solana', '#14f195'],
+    XRP: ['XRP', '#94a3b8'], DOGE: ['Dogecoin', '#c2a633'], ADA: ['Cardano', '#3b82f6'], TON: ['Toncoin', '#0098ea'], TRX: ['TRON', '#ef4444'] };
+  var POS = [[26, 6.4], [44.8, 6.4], [26, 21], [44.8, 21]];
+  var s = '', i;
+  for (i = 0; i < 4; i++) {
+    s += '<div class="card hide" id="cc' + i + '" style="left:' + POS[i][0] + 'rem;top:' + POS[i][1] + 'rem;width:18rem;height:13.8rem;">' +
+      '<div class="ch"><span class="dot" id="cd' + i + '"></span><span class="lbl" id="cs' + i + '"></span><span class="chr" id="cn' + i + '"></span></div>' +
+      '<div class="cp" id="cp' + i + '">–</div><div class="cc" id="cx' + i + '"></div>' +
+      '<div class="cv" id="cv' + i + '"></div><div class="chl" id="ch' + i + '"></div>' +
+      '<canvas class="cspark" id="sp' + i + '" data-w="18" data-h="5.4"></canvas></div>';
+  }
+  $('coins').innerHTML = s;
+  s = '';
+  for (i = 0; i < 8; i++) s += '<div class="trow' + (i % 2 ? ' alt' : '') + '" id="tr' + i + '" style="top:' + (4.3 + i * 1.55).toFixed(2) + 'rem"></div>';
+  $('rates').innerHTML = s;
+
+  var SHORT = { EUR: 'Euro', JPY: 'Yên Nhật', CNY: 'Nhân dân tệ', KRW: 'Won Hàn', GBP: 'Bảng Anh', AUD: 'Đô Úc', SGD: 'Đô Sing', THB: 'Baht Thái',
+    CAD: 'Đô Canada', CHF: 'Franc Thụy Sĩ', HKD: 'Đô HK', INR: 'Rupee', MYR: 'Ringgit', RUB: 'Rúp Nga', TWD: 'Đài tệ', DKK: 'Krone ĐM', NOK: 'Krone NUy', SEK: 'Krona TĐ', KWD: 'Dinar', SAR: 'Riyal' };
+  function rateFmt(v) { return v == null ? '–' : v >= 1000 ? fmt(v, 0) : fmt(v, 2); }
+  function usdFmt(v) { return '$' + (v >= 1000 ? fmt(v, 0, ',', '.') : v >= 1 ? fmt(v, 2, ',', '.') : fmt(v, 4, ',', '.')); }
+  function vndBig(v) {
+    if (v >= 1e9) return fmt(v / 1e9, 2) + ' tỷ ₫';
+    if (v >= 1e6) return fmt(v / 1e6, 1) + ' triệu ₫';
+    return fmt(v, 0) + ' ₫';
+  }
+  function kfmt(v) { return v >= 10000 ? fmt(v / 1000, 1, ',', '.') + 'k' : usdFmt(v).substr(1); }
+
+  var last = null;
+  function drawSparks() {
+    if (!last || !last.klines) return;
+    for (var i = 0; i < 4; i++) {
+      var c = last.coins[i];
+      if (!c) continue;
+      MS.sparkline('sp' + i, last.klines[c.symbol], c.up ? '#34d399' : '#f87171', { padTop: 8, dot: true, round: true });
+    }
+  }
+
+  function render(d) {
+    MS.live(true);
+    MS.setServerTime(d.t, d.tz);
+    var r = d.rates, usdSell = null, i;
+    var sub = [];
+    if (r && r.list) {
+      var usd = null, others = [];
+      for (i = 0; i < r.list.length; i++) { if (r.list[i].code === 'USD') usd = r.list[i]; else others.push(r.list[i]); }
+      if (usd) {
+        usdSell = usd.sell;
+        html('usd-sell', rateFmt(usd.sell) + '<small>₫</small>');
+        html('usd-buy', rateFmt(usd.buy));
+        html('usd-tr', rateFmt(usd.transfer));
+      }
+      for (i = 0; i < 8; i++) {
+        var x = others[i];
+        html('tr' + i, x ? '<b>' + esc(x.code) + '</b><em>' + esc(SHORT[x.code] || x.name) + '</em><span class="c1">' + rateFmt(x.transfer) + '</span><span class="c2">' + rateFmt(x.sell) + '</span>' : '');
+      }
+      var m = /(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/.exec(r.time || '');
+      if (m) {
+        var hh = +m[4]; if (m[6] === 'PM' && hh < 12) hh += 12; if (m[6] === 'AM' && hh === 12) hh = 0;
+        sub.push('Vietcombank ' + MS.pad(hh) + ':' + m[5] + ' ' + MS.pad(+m[2]) + '/' + MS.pad(+m[1]));
+      }
+    } else sub.push('Chưa lấy được tỷ giá');
+
+    // crypto, ordered like config (klines keys keep config order)
+    var tick = {}, order = [];
+    if (d.ticker && d.ticker.length) for (i = 0; i < d.ticker.length; i++) tick[d.ticker[i].symbol] = d.ticker[i];
+    if (d.klines) for (var k in d.klines) order.push(k);
+    if (!order.length) for (k in tick) order.push(k);
+    var coins = [];
+    for (i = 0; i < 4; i++) {
+      var t = tick[order[i]];
+      if (!t) { $('cc' + i).className = 'card hide'; continue; }
+      var sym = t.symbol.replace(/USDT$/, ''), nm = NAMES[sym] || [sym, '#38bdf8'];
+      var price = +t.lastPrice, ch = +t.priceChangePercent, up = ch >= 0;
+      coins[i] = { symbol: t.symbol, up: up };
+      $('cc' + i).className = 'card';
+      $('cd' + i).style.background = nm[1];
+      html('cs' + i, esc(sym));
+      html('cn' + i, esc(nm[0]));
+      html('cp' + i, usdFmt(price));
+      html('cx' + i, '<span class="pill ' + (up ? 'pos' : 'neg') + '">' + (up ? '+' : '') + ch.toFixed(2) + '%</span>');
+      html('cv' + i, usdSell ? '≈ <b>' + vndBig(price * usdSell) + '</b>' : '&nbsp;');
+      html('ch' + i, 'C ' + kfmt(+t.highPrice) + ' · T ' + kfmt(+t.lowPrice));
+    }
+    if (order.length) sub.push('Binance · biểu đồ 48 giờ');
+    else sub.push('Chưa lấy được giá crypto');
+    html('hsub', sub.join(' &nbsp;·&nbsp; '));
+    last = { klines: d.klines, coins: coins };
+    drawSparks();
+  }
+
+  MS.onLayout(drawSparks);
+  MS.init();
+  MS.poll('/api/ext', 20000, render, function () { MS.live(false); });
+})();
+</script>
+</body>
+</html>

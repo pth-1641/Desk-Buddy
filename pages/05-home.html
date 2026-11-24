@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#05070a">
+<title>Desk-Buddy - Tong quan</title>
+<meta name="menu" content="Tong quan: dong ho, lich am, thoi tiet, ty gia, crypto, may tinh">
+<link rel="stylesheet" href="common.css">
+<style>
+#wi{position:absolute;left:1rem;top:3rem;}
+#wt{position:absolute;left:8.6rem;top:2.6rem;font-size:5.6rem;line-height:6rem;letter-spacing:-.2rem;white-space:nowrap;}
+#wt small{font-size:2rem;color:#7b8799;vertical-align:top;position:relative;top:.8rem;letter-spacing:0;}
+#wc{position:absolute;left:8.8rem;top:8.6rem;font-size:1.35rem;font-weight:600;white-space:nowrap;}
+#wx{position:absolute;left:1.3rem;top:11.1rem;font-size:1.05rem;color:#7b8799;white-space:nowrap;}
+#wx b{color:#e6ebf2;font-weight:600;}
+.hr{position:absolute;top:3rem;width:2.9rem;text-align:center;}
+.hr .k{font-size:.85rem;}
+.hr canvas{margin:.3rem auto .1rem;}
+.hr .v{font-size:1.15rem;}
+.mrow{position:absolute;left:1.3rem;right:1.3rem;height:2.5rem;line-height:2.5rem;border-bottom:1px solid #141b26;white-space:nowrap;}
+.mrow.last{border-bottom:0;}
+.mrow .ml{font-size:1.1rem;font-weight:700;color:#9aa5b6;letter-spacing:.05rem;}
+.mrow .ml em{font-style:normal;color:#5f6b7e;font-weight:500;font-size:.9rem;margin-left:.3rem;letter-spacing:0;}
+.mrow canvas{position:absolute;left:10.4rem;top:.35rem;}
+.mrow .mv{position:absolute;right:0;top:0;font-size:1.55rem;font-weight:600;}
+.mrow .mv .pill{font-size:.9rem;margin-left:.5rem;vertical-align:middle;position:relative;top:-.15rem;}
+.sys canvas.r{position:absolute;left:.6rem;top:3.6rem;}
+.sys .rv{position:absolute;left:.6rem;top:6.3rem;width:8rem;text-align:center;font-size:2.2rem;font-weight:600;line-height:2.4rem;}
+.sys .rv small{font-size:1rem;color:#7b8799;font-weight:500;}
+.sys .side{position:absolute;left:9rem;top:4.4rem;width:5.4rem;}
+.sys .side .v{font-size:1.25rem;margin-bottom:.6rem;}
+.nv{font-size:1.9rem;font-weight:600;line-height:2.2rem;white-space:nowrap;}
+.nv small{font-size:.95rem;color:#7b8799;font-weight:500;margin-left:.2rem;}
+.tri{display:inline-block;width:0;height:0;border-left:.42rem solid transparent;border-right:.42rem solid transparent;margin-right:.45rem;position:relative;top:-.1rem;}
+.tri.dn{border-top:.55rem solid #22d3ee;}
+.tri.up{border-bottom:.55rem solid #f472b6;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hdr">
+    <div class="title"><span id="live" class="dot"></span>TỔNG QUAN</div>
+    <div class="hsub" id="hsub">&nbsp;</div>
+    <div class="clock"><div class="date"><div id="dow">&nbsp;</div><div id="dmy">&nbsp;</div></div><div id="time">--:--<span id="sec">--</span></div></div>
+  </div>
+
+  <div class="card" style="left:1.2rem;top:6.4rem;width:30rem;height:14rem;">
+    <div class="ch"><span class="dot" style="background:#fbbf24"></span><span class="lbl">THỜI TIẾT</span><span class="chr" id="city"></span></div>
+    <canvas id="wi" data-w="7" data-h="7"></canvas>
+    <div id="wt" class="thin">--</div>
+    <div id="wc">&nbsp;</div>
+    <div id="wx">&nbsp;</div>
+    <div id="hours"></div>
+  </div>
+
+  <div class="card" style="left:32rem;top:6.4rem;width:30.8rem;height:14rem;">
+    <div class="ch"><span class="dot" style="background:#34d399"></span><span class="lbl">THỊ TRƯỜNG</span><span class="chr" id="mk-upd"></span></div>
+    <div class="mrow" style="top:3rem"><span class="ml">USD<em>VCB bán</em></span><span class="mv" id="m-usd">–</span></div>
+    <div class="mrow" style="top:5.5rem"><span class="ml">EUR<em>VCB bán</em></span><span class="mv" id="m-eur">–</span></div>
+    <div class="mrow" style="top:8rem"><span class="ml" id="m-c0n">BTC</span><canvas id="m-c0s" data-w="6" data-h="1.8"></canvas><span class="mv" id="m-c0">–</span></div>
+    <div class="mrow last" style="top:10.5rem"><span class="ml" id="m-c1n">ETH</span><canvas id="m-c1s" data-w="6" data-h="1.8"></canvas><span class="mv" id="m-c1">–</span></div>
+  </div>
+
+  <div class="card sys" style="left:1.2rem;top:21.2rem;width:14.8rem;height:13.6rem;">
+    <div class="ch"><span class="dot" style="background:#38bdf8"></span><span class="lbl">CPU</span></div>
+    <canvas class="r" id="r-cpu" data-w="8" data-h="8"></canvas><div class="rv" id="v-cpu">–</div>
+    <div class="side"><div class="k">NHIỆT ĐỘ</div><div class="v" id="cpu-t">–</div><div class="k">XUNG</div><div class="v" id="cpu-g">–</div></div>
+  </div>
+  <div class="card sys" style="left:16.8rem;top:21.2rem;width:14.8rem;height:13.6rem;">
+    <div class="ch"><span class="dot" style="background:#a78bfa"></span><span class="lbl">RAM</span></div>
+    <canvas class="r" id="r-ram" data-w="8" data-h="8"></canvas><div class="rv" id="v-ram">–</div>
+    <div class="side"><div class="k">DÙNG</div><div class="v" id="ram-u">–</div><div class="k">TỔNG</div><div class="v" id="ram-t">–</div></div>
+  </div>
+  <div class="card sys" style="left:32.4rem;top:21.2rem;width:14.8rem;height:13.6rem;">
+    <div class="ch"><span class="dot" style="background:#34d399"></span><span class="lbl">GPU</span></div>
+    <canvas class="r" id="r-gpu" data-w="8" data-h="8"></canvas><div class="rv" id="v-gpu">–</div>
+    <div class="side"><div class="k">BỘ NHỚ</div><div class="v" id="gpu-m">–</div><div class="k">VIDEO</div><div class="v" id="gpu-v">–</div></div>
+  </div>
+  <div class="card" style="left:48rem;top:21.2rem;width:14.8rem;height:13.6rem;">
+    <div class="ch"><span class="dot" style="background:#22d3ee"></span><span class="lbl">MẠNG</span></div>
+    <div style="position:absolute;left:1.3rem;top:3.1rem"><div class="k"><span class="tri dn"></span>TẢI XUỐNG</div><div class="nv" id="n-d">–</div></div>
+    <div style="position:absolute;left:1.3rem;top:6.6rem"><div class="k"><span class="tri up"></span>TẢI LÊN</div><div class="nv" id="n-u">–</div></div>
+    <canvas id="n-s" data-w="14.8" data-h="3" style="position:absolute;left:0;bottom:0"></canvas>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  var $ = MS.$, html = MS.html, fmt = MS.fmt, esc = MS.esc, pad = MS.pad;
+  var s = '', i;
+  for (i = 0; i < 4; i++) s += '<div class="hr" style="left:' + (17.6 + i * 3).toFixed(1) + 'rem"><div class="k" id="hh' + i + '">–</div><canvas id="hi' + i + '" data-w="2.4" data-h="2.4"></canvas><div class="v" id="ht' + i + '">–</div></div>';
+  $('hours').innerHTML = s;
+
+  function bytes(b, rate) {
+    var u = ['B', 'KB', 'MB', 'GB', 'TB'], i = 0; b = b || 0;
+    while (b >= 1000 && i < u.length - 1) { b /= 1024; i++; }
+    var n = i === 0 ? b.toFixed(0) : (b >= 100 ? b.toFixed(0) : (b >= 10 ? b.toFixed(1) : b.toFixed(2)));
+    return n + '<small>' + u[i] + (rate ? '/s' : '') + '</small>';
+  }
+  function gb(b) { return (b / 1073741824).toFixed(1); }
+  function usdFmt(v) { return '$' + (v >= 1000 ? fmt(v, 0, ',', '.') : fmt(v, 2, ',', '.')); }
+
+  // ------------------------------------------------ lunar subtitle
+  var lastDay = '';
+  function lunarSub() {
+    var n = MS.now(), key = n.Y + '-' + n.M + '-' + n.D;
+    if (key === lastDay) return;
+    lastDay = key;
+    var l = MS.solar2lunar(n.D, n.M, n.Y);
+    var tetY = (l.m === 1 && l.d === 1) ? l.y : l.y + 1, t = MS.lunar2solar(1, 1, tetY, 0);
+    var left = MS.jd(t[0], t[1], t[2]) - l.jd;
+    html('hsub', 'Âm lịch ' + MS.lunarDayName(l.d).toLowerCase() + ' tháng ' + MS.lunarMonthName(l.m) + ' năm ' + MS.ccYear(l.y) +
+      ' &nbsp;·&nbsp; ' + (left === 0 ? 'Hôm nay là Tết!' : 'Còn ' + left + ' ngày đến Tết'));
+  }
+  setInterval(lunarSub, 1000);
+
+  // ------------------------------------------------ external data
+  var E = null;
+  function drawExt() {
+    if (!E) return;
+    var W = E.weather, o, i;
+    if (W && W.current) {
+      o = MS.ctx2d('wi'); MS.drawWx(o.c, o.w / 2, o.h / 2, o.w, W.current.weather_code, W.current.is_day);
+      for (i = 0; i < 4; i++) {
+        var hIdx = (i + 1) * 3;
+        if (W.hourly.time[hIdx] == null) continue;
+        o = MS.ctx2d('hi' + i); MS.drawWx(o.c, o.w / 2, o.h / 2, o.w, W.hourly.weather_code[hIdx], W.hourly.is_day[hIdx]);
+      }
+    }
+    for (i = 0; i < 2; i++) {
+      var c = E.coins[i];
+      if (c && E.klines) MS.sparkline('m-c' + i + 's', E.klines[c.sym], c.up ? '#34d399' : '#f87171', { lw: 1.3, padTop: 2 });
+    }
+  }
+  function onExt(d) {
+    MS.setServerTime(d.t, d.tz);
+    var W = d.weather, i;
+    html('city', esc(d.city || ''));
+    if (W && W.current) {
+      var cur = W.current, dl = W.daily;
+      html('wt', Math.round(cur.temperature_2m) + '<small>°C</small>');
+      html('wc', MS.wx(cur.weather_code)[0]);
+      var aq = d.aqi && d.aqi.current && d.aqi.current.us_aqi != null ? d.aqi.current.us_aqi : null;
+      html('wx', 'Cao <b>' + Math.round(dl.temperature_2m_max[0]) + '°</b> Thấp <b>' + Math.round(dl.temperature_2m_min[0]) + '°</b> &nbsp;·&nbsp; Ẩm <b>' +
+        cur.relative_humidity_2m + '%</b>' + (aq != null ? ' &nbsp;·&nbsp; AQI <b style="color:' + MS.aqiInfo(aq)[2] + '">' + aq + '</b>' : '') +
+        ' &nbsp;·&nbsp; Mưa <b>' + (dl.precipitation_probability_max[0] || 0) + '%</b>');
+      for (i = 0; i < 4; i++) {
+        var hIdx = (i + 1) * 3;
+        if (W.hourly.time[hIdx] == null) continue;
+        html('hh' + i, W.hourly.time[hIdx].substr(11, 2) + 'h');
+        html('ht' + i, Math.round(W.hourly.temperature_2m[hIdx]) + '°');
+      }
+    } else html('wc', 'Chưa có dữ liệu');
+
+    if (d.rates && d.rates.list) {
+      for (i = 0; i < d.rates.list.length; i++) {
+        var r = d.rates.list[i];
+        if (r.code === 'USD') html('m-usd', fmt(r.sell, 0) + '<small class="muted" style="font-size:.95rem;font-weight:500"> ₫</small>');
+        if (r.code === 'EUR') html('m-eur', fmt(r.sell, 0) + '<small class="muted" style="font-size:.95rem;font-weight:500"> ₫</small>');
+      }
+    }
+    var tick = {}, order = [], coins = [];
+    if (d.ticker && d.ticker.length) for (i = 0; i < d.ticker.length; i++) tick[d.ticker[i].symbol] = d.ticker[i];
+    if (d.klines) for (var k in d.klines) order.push(k);
+    for (i = 0; i < 2; i++) {
+      var t = tick[order[i]];
+      if (!t) continue;
+      var ch = +t.priceChangePercent, up = ch >= 0;
+      coins[i] = { sym: t.symbol, up: up };
+      html('m-c' + i + 'n', esc(t.symbol.replace(/USDT$/, '')) + '<em>24h</em>');
+      html('m-c' + i, usdFmt(+t.lastPrice) + '<span class="pill ' + (up ? 'pos' : 'neg') + '">' + (up ? '+' : '') + ch.toFixed(1) + '%</span>');
+    }
+    if (d.upd && d.upd.crypto) {
+      var u = new Date(d.upd.crypto + (d.tz || 0) * 60000);
+      html('mk-upd', pad(u.getUTCHours()) + ':' + pad(u.getUTCMinutes()));
+    }
+    E = { weather: W, klines: d.klines, coins: coins };
+    drawExt();
+  }
+
+  // ------------------------------------------------ system stats
+  var netHist = [], upHist = [];
+  // download (filled) + upload (line), scaled with headroom and a 64 KB/s floor so steady traffic
+  // doesn't turn into a solid block
+  function drawNet() {
+    var o = MS.ctx2d('n-s'), c = o.c, w = o.w, h = o.h, N = 60, i, mx = 64 * 1024;
+    MS.clipBottom(c, w, h, MS.unit() * 1.2 - 1);
+    for (i = 0; i < netHist.length; i++) mx = Math.max(mx, netHist[i], upHist[i]);
+    mx *= 1.25;
+    function line(a, col, fill) {
+      if (a.length < 2) return;
+      var step = w / (N - 1), x0 = w - (a.length - 1) * step, j, x, y;
+      c.beginPath();
+      for (j = 0; j < a.length; j++) { x = x0 + j * step; y = h - 1 - a[j] / mx * (h - 3); if (j) c.lineTo(x, y); else c.moveTo(x, y); }
+      if (fill) {
+        c.lineTo(w, h); c.lineTo(x0, h); c.closePath();
+        var g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, MS.hexA(col, .3)); g.addColorStop(1, MS.hexA(col, 0));
+        c.fillStyle = g; c.fill();
+        c.beginPath();
+        for (j = 0; j < a.length; j++) { x = x0 + j * step; y = h - 1 - a[j] / mx * (h - 3); if (j) c.lineTo(x, y); else c.moveTo(x, y); }
+      }
+      c.strokeStyle = col; c.lineWidth = 1.4; c.lineJoin = 'round'; c.stroke();
+    }
+    line(netHist, '#22d3ee', true);
+    line(upHist, '#f472b6', false);
+  }
+  function onStats(d, redraw) {
+    if ($('hsub').className.indexOf('err') >= 0) lastDay = '';
+    MS.live(true);
+    MS.setServerTime(d.t, d.tz);
+    lunarSub();
+    var c = d.cpu || {}, r = d.ram || {}, g = d.gpu || {}, n = d.net || {};
+    var rp = r.total ? Math.round(r.used / r.total * 100) : 0;
+    MS.ring('r-cpu', c.load, '#0369a1', '#38bdf8');
+    MS.ring('r-ram', rp, '#6d28d9', '#a78bfa');
+    MS.ring('r-gpu', g.load, '#047857', '#34d399');
+    html('v-cpu', (c.load || 0) + '<small>%</small>');
+    html('v-ram', rp + '<small>%</small>');
+    html('v-gpu', (g.load || 0) + '<small>%</small>');
+    html('cpu-t', c.temp ? c.temp + '<small>°C</small>' : '–');
+    html('cpu-g', (c.ghz || 0).toFixed(1) + '<small>GHz</small>');
+    html('ram-u', gb(r.used || 0) + '<small>GB</small>');
+    html('ram-t', gb(r.total || 0) + '<small>GB</small>');
+    html('gpu-m', bytes(g.mem || 0));
+    html('gpu-v', (g.decode || 0) + '<small>%</small>');
+    html('n-d', bytes(n.down, true));
+    html('n-u', bytes(n.up, true));
+    if (!redraw) {
+      netHist.push(n.down || 0); upHist.push(n.up || 0);
+      if (netHist.length > 60) { netHist.shift(); upHist.shift(); }
+    }
+    drawNet();
+    lastStats = d;
+  }
+  var lastStats = null;
+  MS.onLayout(function () { drawExt(); if (lastStats) onStats(lastStats, true); });
+  MS.init();
+  lunarSub();
+  MS.poll('/api/stats', 2000, onStats, function () { MS.live(false); });
+  MS.poll('/api/ext', 30000, onExt);
+})();
+</script>
+</body>
+</html>
