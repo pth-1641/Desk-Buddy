@@ -701,20 +701,32 @@ $vid = [hashtable]::Synchronized(@{ running = $true; want = [hashtable]::Synchro
 $videoWorker = {
   param($vid, $dir)
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  Add-Type -AssemblyName System.Runtime.WindowsRuntime
   Add-Type -AssemblyName System.Drawing
-  $m = [System.WindowsRuntimeSystemExtensions].GetMethods()
-  $asOp = ($m | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' })[0]
-  $asOpP = ($m | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperationWithProgress`2' })[0]
-  function Wait-Op($op, [Type]$t) { $tk = $asOp.MakeGenericMethod($t).Invoke($null, @($op)); [void]$tk.Wait(120000); $tk.Result }
-  function Wait-OpP($op, [Type]$t, [Type]$p) { $tk = $asOpP.MakeGenericMethod($t, $p).Invoke($null, @($op)); [void]$tk.Wait(600000); $tk.Result }
-  $tClip = [Windows.Media.Editing.MediaClip, Windows.Media.Editing, ContentType = WindowsRuntime]
-  $tProf = [Windows.Media.MediaProperties.MediaEncodingProfile, Windows.Media.MediaProperties, ContentType = WindowsRuntime]
-  $tFile = [Windows.Storage.StorageFile, Windows.Storage, ContentType = WindowsRuntime]
-  $tFolder = [Windows.Storage.StorageFolder, Windows.Storage, ContentType = WindowsRuntime]
-  # the composition's clip list comes back as a raw COM object: add clips through ICollection<MediaClip>.Add
-  $addClip = [System.Collections.Generic.ICollection`1].MakeGenericType($tClip).GetMethod('Add')
   $jpg = [Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' }
+  # prefer ffmpeg (reliable); fall back to WinRT MediaComposition
+  $ffmpeg = $null
+  foreach ($p in 'ffmpeg', 'D:\ffmpeg\bin\ffmpeg.exe') { try { $ffmpeg = (Get-Command $p -ErrorAction Stop).Source; break } catch {} }
+  $useWinRT = -not $ffmpeg
+  if ($useWinRT) {
+    Add-Type -AssemblyName System.Runtime.WindowsRuntime
+    $m = [System.WindowsRuntimeSystemExtensions].GetMethods()
+    $asOp = ($m | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' })[0]
+    $asOpP = ($m | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperationWithProgress`2' })[0]
+    function Wait-Op($op, [Type]$t) { $tk = $asOp.MakeGenericMethod($t).Invoke($null, @($op)); [void]$tk.Wait(120000); $tk.Result }
+    function Wait-OpP($op, [Type]$t, [Type]$p) { $tk = $asOpP.MakeGenericMethod($t, $p).Invoke($null, @($op)); [void]$tk.Wait(600000); $tk.Result }
+    $tClip = [Windows.Media.Editing.MediaClip, Windows.Media.Editing, ContentType = WindowsRuntime]
+    $tProf = [Windows.Media.MediaProperties.MediaEncodingProfile, Windows.Media.MediaProperties, ContentType = WindowsRuntime]
+    $tFile = [Windows.Storage.StorageFile, Windows.Storage, ContentType = WindowsRuntime]
+    $tFolder = [Windows.Storage.StorageFolder, Windows.Storage, ContentType = WindowsRuntime]
+    $addClip = [System.Collections.Generic.ICollection`1].MakeGenericType($tClip).GetMethod('Add')
+  }
+  function Run-Ff([string[]]$a) {
+    $pi = New-Object Diagnostics.ProcessStartInfo $ffmpeg, ($a -join ' ')
+    $pi.UseShellExecute = $false; $pi.CreateNoWindow = $true
+    $pi.RedirectStandardError = $true; $pi.RedirectStandardOutput = $true
+    $p = [Diagnostics.Process]::Start($pi); $err = $p.StandardError.ReadToEnd(); $p.WaitForExit(600000)
+    if ($p.ExitCode -ne 0) { throw "ffmpeg exit $($p.ExitCode): $err" }
+  }
 
   function Save-Composition($comp, [string]$out) {
     $prof = $tProf::CreateMp4([Windows.Media.MediaProperties.VideoEncodingQuality]::Vga)
@@ -727,61 +739,88 @@ $videoWorker = {
     [void](Wait-OpP ($comp.RenderToFileAsync($file, [Windows.Media.Editing.MediaTrimmingPreference]::Fast, $prof)) ([Windows.Media.Transcoding.TranscodeFailureReason]) ([double]))
   }
   function Convert-Video([string]$src, [string]$out) {
-    $clip = Wait-Op ($tClip::CreateFromFileAsync((Wait-Op ($tFile::GetFileFromPathAsync($src)) $tFile))) $tClip
-    $vp = $clip.GetVideoEncodingProperties()   # landscape only (vertical clips would get black bars)
-    if ($vp -and $vp.Height -gt $vp.Width * 0.75) { throw "skip portrait clip $($vp.Width)x$($vp.Height)" }
-    $comp = New-Object Windows.Media.Editing.MediaComposition
-    [void]$addClip.Invoke($comp.Clips, @($clip))
-    Save-Composition $comp $out
+    if ($ffmpeg) {
+      # probe dimensions, skip portrait
+      $pi = New-Object Diagnostics.ProcessStartInfo $ffmpeg, "-i `"$src`" -hide_banner"
+      $pi.UseShellExecute = $false; $pi.CreateNoWindow = $true; $pi.RedirectStandardError = $true; $pi.RedirectStandardOutput = $true
+      $p = [Diagnostics.Process]::Start($pi); $info = $p.StandardError.ReadToEnd(); $p.WaitForExit(30000)
+      if ($info -match '(\d{2,5})x(\d{2,5})') { $vw = [int]$Matches[1]; $vh = [int]$Matches[2]; if ($vh -gt $vw * 0.75) { throw "skip portrait clip ${vw}x${vh}" } }
+      Run-Ff @('-y', '-i', "`"$src`"", '-vf', '"scale=640:360:force_original_aspect_ratio=increase,crop=640:360"', '-c:v', 'libx264', '-profile:v', 'baseline', '-level', '3.0', '-pix_fmt', 'yuv420p', '-preset', 'fast', '-crf', '23', '-an', '-movflags', '+faststart', "`"$out`"")
+    } else {
+      $clip = Wait-Op ($tClip::CreateFromFileAsync((Wait-Op ($tFile::GetFileFromPathAsync($src)) $tFile))) $tClip
+      $vp = $clip.GetVideoEncodingProperties()
+      if ($vp -and $vp.Height -gt $vp.Width * 0.75) { throw "skip portrait clip $($vp.Width)x$($vp.Height)" }
+      $comp = New-Object Windows.Media.Editing.MediaComposition
+      [void]$addClip.Invoke($comp.Clips, @($clip))
+      Save-Composition $comp $out
+    }
   }
-  # GIF -> video: every frame drawn on 640x360 (blurred copy behind, whole frame centred), shown for its own delay,
-  # the loop repeated until ~10 s
+  # GIF -> video: frames scaled to fill 640x360 (nearest-neighbour for crisp pixels), looped ~10 s
   function Convert-Gif([string]$gifPath, [string]$out) {
     $img = [Drawing.Image]::FromFile($gifPath)
-    $tmp = Join-Path $env:TEMP ('ms-gif-' + [guid]::NewGuid().ToString('N'))
-    New-Item -ItemType Directory $tmp | Out-Null
     try {
       $fd = New-Object Drawing.Imaging.FrameDimension($img.FrameDimensionsList[0])
       $n = $img.GetFrameCount($fd)
       if ($n -lt 2) { throw 'not animated' }
       $ar = $img.Width / $img.Height; if ($ar -lt 1.6 -or $ar -gt 1.95) { throw "skip: not 16:9 ($($img.Width)x$($img.Height))" }
-      $delays = @(); try { $raw = $img.GetPropertyItem(0x5100).Value } catch { $raw = $null }
-      $W = 640; $H = 360; $s = [math]::Max($W / $img.Width, $H / $img.Height)   # cover: fill the screen, crop the few extra px
-      $dw = [math]::Round($img.Width * $s); $dh = [math]::Round($img.Height * $s)
-      $ep = New-Object Drawing.Imaging.EncoderParameters 1
-      $ep.Param[0] = New-Object Drawing.Imaging.EncoderParameter ([Drawing.Imaging.Encoder]::Quality), ([long]92)
-      $files = @()
-      for ($i = 0; $i -lt $n; $i++) {
-        [void]$img.SelectActiveFrame($fd, $i)
-        $d = if ($raw -and $raw.Length -ge ($i + 1) * 4) { [BitConverter]::ToInt32($raw, $i * 4) * 10 } else { 100 }
-        if ($d -lt 40) { $d = 100 }   # browsers treat 0/10 ms delays as 100 ms
-        $delays += $d
-        $bmp = New-Object Drawing.Bitmap $W, $H
-        $g = [Drawing.Graphics]::FromImage($bmp)
-        $tiny = New-Object Drawing.Bitmap 24, 14
-        $tg = [Drawing.Graphics]::FromImage($tiny); $tg.InterpolationMode = 'HighQualityBilinear'; $tg.DrawImage($img, 0, 0, 24, 14); $tg.Dispose()
-        $g.InterpolationMode = 'HighQualityBilinear'; $g.DrawImage($tiny, -40, -40, $W + 80, $H + 80); $tiny.Dispose()
-        $g.FillRectangle((New-Object Drawing.SolidBrush ([Drawing.Color]::FromArgb(110, 0, 0, 0))), 0, 0, $W, $H)
-        if ($s -ge 1) { $g.InterpolationMode = 'NearestNeighbor'; $g.PixelOffsetMode = 'Half' } else { $g.InterpolationMode = 'HighQualityBicubic' }
-        $g.DrawImage($img, (New-Object Drawing.RectangleF ([single][math]::Floor(($W - $dw) / 2)), ([single][math]::Floor(($H - $dh) / 2)), ([single]$dw), ([single]$dh)))
-        $g.Dispose()
-        $f = Join-Path $tmp ('f{0:D4}.jpg' -f $i); $bmp.Save($f, $jpg, $ep); $bmp.Dispose()
-        $files += $f
+    } finally { $img.Dispose() }
+    if ($ffmpeg) {
+      # get GIF duration to calculate loop count
+      $pi = New-Object Diagnostics.ProcessStartInfo $ffmpeg, "-i `"$gifPath`" -hide_banner"
+      $pi.UseShellExecute = $false; $pi.CreateNoWindow = $true; $pi.RedirectStandardError = $true; $pi.RedirectStandardOutput = $true
+      $p = [Diagnostics.Process]::Start($pi); $info = $p.StandardError.ReadToEnd(); $p.WaitForExit(30000)
+      $durMs = 5000
+      if ($info -match 'Duration:\s*(\d+):(\d+):(\d+)\.(\d+)') { $durMs = ([int]$Matches[1] * 3600 + [int]$Matches[2] * 60 + [int]$Matches[3]) * 1000 + [int]$Matches[4] * 10 }
+      $loops = [math]::Max(1, [math]::Min(40, [math]::Ceiling(10000 / [math]::Max(1, $durMs))))
+      $loopF = if ($loops -gt 1) { "-stream_loop $($loops - 1)" } else { '' }
+      # nearest-neighbour scale (crisp pixels), cover-crop to 640x360, H.264 Baseline for old Android
+      Run-Ff @('-y', $loopF, '-i', "`"$gifPath`"", '-vf', '"scale=640:360:force_original_aspect_ratio=increase:flags=neighbor,crop=640:360"', '-c:v', 'libx264', '-profile:v', 'baseline', '-level', '3.0', '-pix_fmt', 'yuv420p', '-preset', 'fast', '-crf', '20', '-an', '-movflags', '+faststart', "`"$out`"")
+    } else {
+      # WinRT path: render each frame as JPEG, compose with MediaComposition
+      $img = [Drawing.Image]::FromFile($gifPath)
+      $tmp = Join-Path $env:TEMP ('ms-gif-' + [guid]::NewGuid().ToString('N'))
+      New-Item -ItemType Directory $tmp | Out-Null
+      try {
+        $fd = New-Object Drawing.Imaging.FrameDimension($img.FrameDimensionsList[0])
+        $n = $img.GetFrameCount($fd)
+        $delays = @(); try { $raw = $img.GetPropertyItem(0x5100).Value } catch { $raw = $null }
+        $W = 640; $H = 360; $s = [math]::Max($W / $img.Width, $H / $img.Height)
+        $dw = [math]::Round($img.Width * $s); $dh = [math]::Round($img.Height * $s)
+        $ep = New-Object Drawing.Imaging.EncoderParameters 1
+        $ep.Param[0] = New-Object Drawing.Imaging.EncoderParameter ([Drawing.Imaging.Encoder]::Quality), ([long]92)
+        $files = @()
+        for ($i = 0; $i -lt $n; $i++) {
+          [void]$img.SelectActiveFrame($fd, $i)
+          $d = if ($raw -and $raw.Length -ge ($i + 1) * 4) { [BitConverter]::ToInt32($raw, $i * 4) * 10 } else { 100 }
+          if ($d -lt 40) { $d = 100 }
+          $delays += $d
+          $bmp = New-Object Drawing.Bitmap $W, $H
+          $g = [Drawing.Graphics]::FromImage($bmp)
+          $tiny = New-Object Drawing.Bitmap 24, 14
+          $tg = [Drawing.Graphics]::FromImage($tiny); $tg.InterpolationMode = 'HighQualityBilinear'; $tg.DrawImage($img, 0, 0, 24, 14); $tg.Dispose()
+          $g.InterpolationMode = 'HighQualityBilinear'; $g.DrawImage($tiny, -40, -40, $W + 80, $H + 80); $tiny.Dispose()
+          $g.FillRectangle((New-Object Drawing.SolidBrush ([Drawing.Color]::FromArgb(110, 0, 0, 0))), 0, 0, $W, $H)
+          if ($s -ge 1) { $g.InterpolationMode = 'NearestNeighbor'; $g.PixelOffsetMode = 'Half' } else { $g.InterpolationMode = 'HighQualityBicubic' }
+          $g.DrawImage($img, (New-Object Drawing.RectangleF ([single][math]::Floor(($W - $dw) / 2)), ([single][math]::Floor(($H - $dh) / 2)), ([single]$dw), ([single]$dh)))
+          $g.Dispose()
+          $f = Join-Path $tmp ('f{0:D4}.jpg' -f $i); $bmp.Save($f, $jpg, $ep); $bmp.Dispose()
+          $files += $f
+        }
+        $img.Dispose(); $img = $null
+        $loopMs = ($delays | Measure-Object -Sum).Sum
+        $reps = [math]::Max(1, [math]::Min(40, [math]::Ceiling(10000 / [math]::Max(1, $loopMs))))
+        $base = @()
+        for ($i = 0; $i -lt $n; $i++) {
+          $sf = Wait-Op ($tFile::GetFileFromPathAsync($files[$i])) $tFile
+          $base += , (Wait-Op ($tClip::CreateFromImageFileAsync($sf, [TimeSpan]::FromMilliseconds($delays[$i]))) $tClip)
+        }
+        $comp = New-Object Windows.Media.Editing.MediaComposition
+        for ($r = 0; $r -lt $reps; $r++) { for ($i = 0; $i -lt $n; $i++) { [void]$addClip.Invoke($comp.Clips, @($(if ($r -eq 0) { $base[$i] } else { $base[$i].Clone() }))) } }
+        Save-Composition $comp $out
+      } finally {
+        if ($img) { $img.Dispose() }
+        Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
       }
-      $img.Dispose(); $img = $null
-      $loopMs = ($delays | Measure-Object -Sum).Sum
-      $reps = [math]::Max(1, [math]::Min(40, [math]::Ceiling(10000 / [math]::Max(1, $loopMs))))
-      $base = @()
-      for ($i = 0; $i -lt $n; $i++) {
-        $sf = Wait-Op ($tFile::GetFileFromPathAsync($files[$i])) $tFile
-        $base += , (Wait-Op ($tClip::CreateFromImageFileAsync($sf, [TimeSpan]::FromMilliseconds($delays[$i]))) $tClip)
-      }
-      $comp = New-Object Windows.Media.Editing.MediaComposition
-      for ($r = 0; $r -lt $reps; $r++) { for ($i = 0; $i -lt $n; $i++) { [void]$addClip.Invoke($comp.Clips, @($(if ($r -eq 0) { $base[$i] } else { $base[$i].Clone() }))) } }
-      Save-Composition $comp $out
-    } finally {
-      if ($img) { $img.Dispose() }
-      Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
     }
   }
   function Get-Html($u) { (Invoke-WebRequest $u -UseBasicParsing -TimeoutSec 20 -UserAgent 'Mozilla/5.0').Content }
